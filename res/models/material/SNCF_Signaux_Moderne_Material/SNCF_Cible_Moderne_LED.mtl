@@ -1,0 +1,35 @@
+function data()
+return {
+	__version = "",
+	order = 0,
+	params = {
+		albedo_scale = {
+			albedoScale = { 1, 1, 1, },
+		},
+		fade_out_range = {
+			fadeOutEndDist = 20000,
+			fadeOutStartDist = 10000,
+		},
+		map_albedo = {
+			fileName = "SNCF_Signaux_Moderne_Texture/SNCF_Cible_Moderne_LED_1.dds",
+			scaleDownAllowed = false,
+			type = "TWOD",
+		},
+		map_metal_gloss_ao = {
+			fileName = "SNCF_Signaux_Moderne_Texture/SNCF_Cible_Moderne_1_Metal.dds",
+			scaleDownAllowed = false,
+			type = "TWOD",
+		},
+		polygon_offset = {
+			factor = 0,
+			forceDepthWrite = false,
+			units = 0,
+		},
+		two_sided = {
+			flipNormal = true,
+			twoSided = false,
+		},
+	},
+	type = "PHYSICAL",
+}
+end

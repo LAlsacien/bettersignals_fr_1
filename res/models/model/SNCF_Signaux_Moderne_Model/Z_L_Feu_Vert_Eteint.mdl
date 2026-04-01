@@ -1,0 +1,50 @@
+function data()
+return {
+	boundingInfo = { 
+		bbMax = { 5, 3, 5, }, 
+		bbMin = { 3, 2, -1, }, 
+	},
+	collider = { 
+		params = { halfExtents = { 1, 1, 1, }, }, 
+		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, }, 
+		type = "BOX", 
+	},
+	lods = {
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne_LED.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Feu_Vert_Eteint_lod0.msh",
+						name = "SNCF_Feu_Vert_Eteint",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode", 
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false, 
+			visibleFrom = 0, 
+			visibleTo = 85,
+		},
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne_LED.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Feu_Vert_Eteint_lod1.msh",
+						name = "SNCF_Feu_Vert_Eteint",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode", transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false, 
+			visibleFrom = 85, 
+			visibleTo = 150,
+		},
+	},
+	metadata = { availability = { yearFrom = 2005, yearTo = 0, }, cost = { price = 0, priceScale = 1, }, },
+	version = 1,
+}
+end

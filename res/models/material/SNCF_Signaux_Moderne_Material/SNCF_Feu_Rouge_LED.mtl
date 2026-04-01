@@ -1,0 +1,29 @@
+function data()
+return {
+	__version = "",
+	order = 0,
+	params = {
+		fade_out_range = {
+			fadeOutEndDist = 20000,
+			fadeOutStartDist = 10000,
+		},
+		map_emissive = {
+			fileName = "SNCF_Signaux_Moderne_Texture/SNCF_Feu_Rouge_LED.dds",
+			type = "TWOD",
+		},
+		emissive_scale = {
+			emissiveScale = { 4.5, 4.5, 4.5, },
+		},
+		polygon_offset = {
+			factor = 0,
+			forceDepthWrite = false,
+			units = 0,
+		},
+		two_sided = {
+			flipNormal = false,
+			twoSided = false,
+		},
+	},
+	type = "EMISSIVE",
+}
+end
