@@ -1,0 +1,213 @@
+function data()
+    local function intRange(start, stop, step)
+        local a = {}
+        local i = start
+        while i <= stop do
+            table.insert(a, i)
+            i = i + step
+        end
+        return a
+    end
+
+    local function map(a, f)
+        local res = {}
+        if a and type(a) == "table" then
+            for _, v in ipairs(a) do
+                table.insert(res, f(v))
+            end
+        end
+        return res
+    end
+
+    local range_offset = map(intRange(-10, 10, 1), tostring)
+    local range_rot = map(intRange(-180, 180, 5), tostring)
+
+    return {
+        type = "ASSET_TRACK",
+        description = {
+            name = _("BAL Type B - LED"),
+            description = _("Signalisation ferroviaire SNCF moderne de type B - Block Automatique Lumineux"),
+        },
+        availability = { yearFrom = 2005 },
+        skipOnInit = true,
+        categories = { "better_signals" },
+        skipCollision = true,
+        autoRemovable = false,
+        order = 11111,
+        params = {
+            {
+                key = "bal_mode",
+                name = _("Régime du Signal"),
+                uiType = "BUTTON",
+                values = { _("Standard"), _("Jaune Cli."), _("Rouge Cli."), _("Annonce RC"), _("Pré-Annonce RC") },
+                defaultIndex = 0,
+            },
+            {
+                key = "mast_type",
+                name = _("Type de Mât"),
+                uiType = "COMBOBOX",
+                values = { 
+                    _("Léger"), _("Léger Haut"), _("Léger & Drapeau"), _("Léger Haut & Drapeau"), 
+                    _("Lourd"), _("Lourd Haut"), _("Lourd & Drapeau"), _("Lourd Haut & Drapeau"), 
+                    _("Nacelle Moderne") 
+                },
+                defaultIndex = 0,
+            },
+            {
+                key = "offset_x",
+                name = _("Décalage X (Avant/Arrière)"),
+                uiType = "SLIDER",
+                values = range_offset,
+                defaultIndex = 10,
+            },
+            {
+                key = "offset_y",
+                name = _("Décalage Y (Gauche/Droite)"),
+                uiType = "SLIDER",
+                values = range_offset,
+                defaultIndex = 10,
+            },
+            {
+                key = "offset_z",
+                name = _("Décalage Z (Haut/Bas)"),
+                uiType = "SLIDER",
+                values = range_offset,
+                defaultIndex = 10,
+            },
+            {
+                key = "offset_rot",
+                name = _("Rotation Z (Degrés)"),
+                uiType = "SLIDER",
+                values = range_rot,
+                defaultIndex = 36,
+            }
+        },
+        updateFn = function(params)
+            local result = {
+                models = {},
+                groundFaces = {},
+                terrainAlignmentLists = {}
+            }
+            
+            local my_mode = params.bal_mode or 0
+            local isGreen = (params.signal_state and params.signal_state == 1)
+            local dist_red = 99
+
+            if not isGreen then dist_red = 0
+            elseif params.following_signal then
+                if params.following_signal.signal_state == 0 then dist_red = 1
+                elseif params.following_signal.following_signal then
+                    if params.following_signal.following_signal.signal_state == 0 then dist_red = 2
+                    elseif params.following_signal.following_signal.following_signal and params.following_signal.following_signal.following_signal.signal_state == 0 then dist_red = 3
+                    end
+                end
+            end
+
+            local display = "VERT"
+            if dist_red == 0 then display = "CARRE"
+            elseif dist_red == 1 then if my_mode == 2 then display = "ROUGE_CLI" else display = "JAUNE" end
+            elseif dist_red == 2 then
+                if my_mode == 1 then display = "JAUNE_CLI"
+                elseif my_mode == 3 or my_mode == 4 then display = "JAUNE"
+                else display = "VERT" end
+            elseif dist_red == 3 then if my_mode == 4 then display = "JAUNE_CLI" else display = "VERT" end
+            end
+
+            local mast_idx = params.mast_type or 0
+            local mast_config = {
+                [0] = { mdl = "Z_Base_M_leger.mdl",          plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0,     pz = 0 },
+                [1] = { mdl = "Z_Base_M_leger_haut.mdl",     plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0,     pz = 0 },
+                [2] = { mdl = "Z_Base_M_leger_dra.mdl",      plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0.425, pz = 0 },
+                [3] = { mdl = "Z_Base_M_leger_haut_dra.mdl", plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.425, pz = 0 },
+                [4] = { mdl = "Z_Base_M_lourd.mdl",          plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0.2,   pz = 0 },
+                [5] = { mdl = "Z_Base_M_lourd_haut.mdl",     plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.2,   pz = 0 },
+                [6] = { mdl = "Z_Base_M_lourd_dra.mdl",      plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0.64,  pz = 0 },
+                [7] = { mdl = "Z_Base_M_lourd_haut_dra.mdl", plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.64,  pz = 0 },
+                [8] = { mdl = "Z_Base_M_nacelle_moderne.mdl",        plaque_mdl = "Z_Plaque_Nacelle_Type_B_Nf.mdl", x = -0.15, y = -1.35, z = 3.205, px = 0,    py = 0,     pz = 0 }
+            }
+            local current_mast = mast_config[mast_idx] or mast_config[0]
+
+            local base_z = 1.05
+            local ox = (params.offset_x or 10) - 10
+            local oy = (params.offset_y or 10) - 10
+            local oz = (params.offset_z or 10) - 10
+            local orot = ((params.offset_rot or 36) * 5) - 180
+
+            -- MATRICES MANUELLES PUR LUA
+            local rad = math.rad(orot)
+            local c = math.cos(rad)
+            local s = math.sin(rad)
+
+            local matrice_mat = {
+                c,  s, 0, 0,
+               -s,  c, 0, 0,
+                0,  0, 1, 0,
+                ox, oy, oz + base_z, 1
+            }
+
+            local lx = current_mast.x
+            local ly = current_mast.y
+            local lz = base_z + current_mast.z
+            local matrice_feux = {
+                c,  s, 0, 0,
+               -s,  c, 0, 0,
+                0,  0, 1, 0,
+                ox + (lx * c - ly * s), oy + (lx * s + ly * c), oz + lz, 1
+            }
+
+            local px = current_mast.px
+            local py = current_mast.py
+            local pz = base_z + current_mast.pz
+            local matrice_plaque = {
+                c,  s, 0, 0,
+               -s,  c, 0, 0,
+                0,  0, 1, 0,
+                ox + (px * c - py * s), oy + (px * s + py * c), oz + pz, 1
+            }
+
+            local lz_haut = base_z + current_mast.z + 0.66
+            local matrice_feux_haut = {
+                c,  s, 0, 0,
+               -s,  c, 0, 0,
+                0,  0, 1, 0,
+                ox + (lx * c - ly * s), oy + (lx * s + ly * c), oz + lz_haut, 1
+            }
+
+            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.mdl, transf = matrice_mat })
+            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_Type_B.mdl", transf = matrice_feux })
+            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.plaque_mdl, transf = matrice_plaque })
+
+            if display == "CARRE" then
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux_haut })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
+            elseif display == "VERT" then
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Allume.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
+            elseif display == "JAUNE" then
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+            end
+
+            table.insert(result.groundFaces, {  
+                face = { { -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 } },
+                modes = { { type = "FILL", key = "industry_floor.lua" } },
+                loop = true,
+                alignmentOffsetMode = "OBJECT",
+                alignmentDirMode = "OBJECT",
+                alignmentOffset = { -2.0, -1.0 },
+            })
+            table.insert(result.terrainAlignmentLists, { type = "EQUAL", faces =  { } })
+            
+            return result
+        end
+    }
+end

@@ -1,0 +1,47 @@
+function data()
+return {
+	boundingInfo = {
+		bbMax = { 6.5497269630432, 1.8284229040146, 8.7600011825562, },
+		bbMin = { 3.1368718147278, 0.58973801136017, 6.0991625785828, },
+	},
+	collider = {
+		params = { halfExtents = { 0.98984062671661, 0.55000007152557, 2.7248632907867, }, },
+		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+		type = "BOX",
+	},
+	lods = {
+		{ -- LOD 0
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl", "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_PlaqueNf_Nom_Nacelle_lod0.msh",
+						name = "SNCF_PlaqueNf_Nom_Nacelle",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.21, -0.05, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false, visibleFrom = 0, visibleTo = 85,
+		},
+		{ -- LOD 1 (Étendu à 250m)
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl", "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_PlaqueNf_Nom_Nacelle_lod1.msh",
+						name = "SNCF_PlaqueNf_Nom_Nacelle",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.21, -0.05, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false, visibleFrom = 85, visibleTo = 250,
+		},
+	},
+	metadata = { },
+	version = 1,
+}
+end

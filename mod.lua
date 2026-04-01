@@ -29,7 +29,12 @@ function data()
             local signals = pRequire('nightfury/signals/main')
             if not signals then return end
             
-            signals.signals['a_bal_vl_a_s_m_s'] = {
+            signals.signals['a_type_bal'] = {
+                type = "main",
+                isAnimated = false,
+            }
+
+            signals.signals['b_type_bal'] = {
                 type = "main",
                 isAnimated = false,
             }

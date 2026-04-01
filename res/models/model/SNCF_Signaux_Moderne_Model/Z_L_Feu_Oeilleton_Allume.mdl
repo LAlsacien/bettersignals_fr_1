@@ -1,0 +1,24 @@
+function data()
+return {
+	boundingInfo = { bbMax = { 5, 5, 5, }, bbMin = { -5, -5, -5, }, },
+	collider = { params = { halfExtents = { 1, 1, 1, }, }, transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, }, type = "BOX", },
+	lods = {
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_Oeilleton_Moderne.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Oeilleton_Allume_lod0.msh",
+						name = "SNCF_Oeilleton_Allume",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false, visibleFrom = 0, visibleTo = 85,
+		},
+	},
+	metadata = { }, version = 1,
+}
+end
