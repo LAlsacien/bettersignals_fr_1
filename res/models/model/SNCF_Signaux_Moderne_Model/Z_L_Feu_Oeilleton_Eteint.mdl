@@ -7,6 +7,12 @@ return {
 			node = {
 				children = {
 					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Cible_O_lod0.msh",
+						name = "SNCF_Cible_O",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+					{
 						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_Oeilleton_Moderne.mtl", },
 						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Oeilleton_Eteint_lod0.msh",
 						name = "SNCF_Oeilleton_Eteint",
@@ -17,6 +23,21 @@ return {
 				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 			},
 			static = false, visibleFrom = 0, visibleTo = 85,
+		},
+		{ -- LOD 1
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Cible_O_lod1.msh",
+						name = "SNCF_Cible_O",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false, visibleFrom = 85, visibleTo = 150,
 		},
 	},
 	metadata = { }, version = 1,
