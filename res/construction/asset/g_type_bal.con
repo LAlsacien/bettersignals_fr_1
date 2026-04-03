@@ -25,8 +25,8 @@ function data()
     return {
         type = "ASSET_TRACK",
         description = {
-            name = _("BAL Type B - LED"),
-            description = _("Signalisation ferroviaire SNCF moderne de type B - Block Automatique Lumineux"),
+            name = _("BAL Type G - LED"),
+            description = _("Signalisation ferroviaire SNCF moderne de type G (Avec RR) - Block Automatique Lumineux"),
         },
         availability = { yearFrom = 2005 },
         skipOnInit = true,
@@ -46,9 +46,9 @@ function data()
                 name = _("Type de Mât"),
                 uiType = "COMBOBOX",
                 values = { 
-                    _("Léger"), _("Léger Haut"), _("Léger & Drapeau"), _("Léger Haut & Drapeau"), 
-                    _("Lourd"), _("Lourd Haut"), _("Lourd & Drapeau"), _("Lourd Haut & Drapeau"), 
-                    _("Nacelle Moderne") 
+                    _("Léger"), _("Léger Haut"), _("Léger & Drapeau"), 
+                    _("Léger Haut & Drapeau"), _("Lourd"), _("Lourd Haut"), 
+                    _("Lourd & Drapeau"), _("Lourd Haut & Drapeau"), _("Nacelle Moderne") 
                 },
                 defaultIndex = 0,
             },
@@ -93,6 +93,9 @@ function data()
             if params.opt_jcli and tonumber(params.opt_jcli) == 1 then has_jcli = true end
 
             -- 2. LECTURE DES WAYPOINTS
+            local force_rr = 0
+            if params.paramsOverride and params.paramsOverride.rr then force_rr = tonumber(params.paramsOverride.rr) end
+            
             local force_rcli = 0
             if params.paramsOverride and params.paramsOverride.rcli then force_rcli = tonumber(params.paramsOverride.rcli) end
 
@@ -140,27 +143,52 @@ function data()
                 display = "VERT" 
             end
 
-                -- MATS LEGERS
+            -- 5. FONCTIONNEMENT RR30/60
+            local rr_state = 0
+            
+            local speed_ahead = params.signal_speed or 999
+            local speed_current = params.previous_speed or 999
+            
+            -- Mode manuel
+            if force_rr == 1 then 
+                rr_state = 1 -- Force RR30
+            elseif force_rr == 2 then 
+                rr_state = 2 --  Force RR60
+            elseif force_rr == 3 then 
+                rr_state = 0 -- Inhibition Totale
+            else
+                -- Mode automatique
+                if speed_current > speed_ahead then
+                    if speed_ahead > 0 and speed_ahead <= 30 then
+                        rr_state = 1
+                    elseif speed_ahead > 30 and speed_ahead <= 60 then
+                        rr_state = 2
+                    end
+                end
+            end
+
+            if display == "CARRE" or display == "ROUGE_CLI" then
+                rr_state = 0
+            end
+
             local mast_idx = params.mast_type or 0
             local mast_config = {
-                
                 -- MATS LEGERS :
-                [0] = { mdl = "Z_Base_M_leger.mdl",          plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0, y = 0, z = 0,     px = 0,     py = 0,     pz = 0,     o_x = 0, o_y = 0, o_z = 0, o_rot = 0 },
-                [1] = { mdl = "Z_Base_M_leger_haut.mdl",     plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0, y = 0, z = 1.860, px = 0,     py = 0,     pz = 0,     o_x = 0, o_y = -0, o_z = 1.86,  o_rot = 0 },
-                [2] = { mdl = "Z_Base_M_leger_dra.mdl",      plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0, y = 0, z = 0,     px = 0,     py = 0.425, pz = 0,     o_x = 0, o_y = -0, o_z = 0, o_rot = 0 },
-                [3] = { mdl = "Z_Base_M_leger_haut_dra.mdl", plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0, y = 0, z = 1.860, px = 0,     py = 0.425, pz = 0,     o_x = 0, o_y = -0, o_z = 1.86,  o_rot = 0 },
+                [0] = { mdl = "Z_Base_M_leger.mdl",          plaque_mdl = "Z_Plaque_Type_B_Nf.mdl", cage_mdl = "Z_Protection_EFGH_leger.mdl", x = 0, y = 0, z = 0,     px = 0, py = 0,     pz = 0, o_x = 0, o_y = 0, o_z = 0, o_rot = 0 },
+                [1] = { mdl = "Z_Base_M_leger_haut.mdl",     plaque_mdl = "Z_Plaque_Type_B_Nf.mdl", cage_mdl = "Z_Protection_EFGH_leger.mdl", x = 0, y = 0, z = 1.860, px = 0, py = 0,     pz = 0, o_x = 0, o_y = -0, o_z = 1.86, o_rot = 0 },
+                [2] = { mdl = "Z_Base_M_leger_dra.mdl",      plaque_mdl = "Z_Plaque_Type_B_Nf.mdl", cage_mdl = "Z_Protection_EFGH_leger.mdl", x = 0, y = 0, z = 0,     px = 0, py = 0.425, pz = 0, o_x = 0, o_y = -0, o_z = 0, o_rot = 0 },
+                [3] = { mdl = "Z_Base_M_leger_haut_dra.mdl", plaque_mdl = "Z_Plaque_Type_B_Nf.mdl", cage_mdl = "Z_Protection_EFGH_leger.mdl", x = 0, y = 0, z = 1.860, px = 0, py = 0.425, pz = 0, o_x = 0, o_y = -0, o_z = 1.86, o_rot = 0 },
                 
-                -- MATS LOURDS DROITS :
-                [4] = { mdl = "Z_Base_M_lourd.mdl",          plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0, y = 0, z = 0,     px = 0,     py = 0.2,   pz = 0,     o_x = -0.35, o_y = 0.6, o_z = -0.6, o_rot = -13.5 },
-                [5] = { mdl = "Z_Base_M_lourd_haut.mdl",     plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0, y = 0, z = 1.860, px = 0,     py = 0.2,   pz = 0,     o_x = 0, o_y = 0, o_z = 1.86,  o_rot = 0 },
+                -- MATS LOURDS :
+                [4] = { mdl = "Z_Base_M_lourd.mdl",          plaque_mdl = "Z_Plaque_Type_B_Nf.mdl", cage_mdl = "Z_Protection_EFGH_lourd.mdl", x = 0, y = 0, z = 0,     px = 0, py = 0.2,   pz = 0, o_x = -0.35, o_y = 0.6, o_z = -0.6, o_rot = -13.5 },
+                [5] = { mdl = "Z_Base_M_lourd_haut.mdl",     plaque_mdl = "Z_Plaque_Type_B_Nf.mdl", cage_mdl = "Z_Protection_EFGH_lourd.mdl", x = 0, y = 0, z = 1.860, px = 0, py = 0.2,   pz = 0, o_x = 0, o_y = 0, o_z = 1.86, o_rot = 0 },
                 
-                -- MATS LOURDS DRAPEAUX (Potences) :
-                [6] = { mdl = "Z_Base_M_lourd_dra.mdl",      plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0, y = 0, z = 0,     px = 0,     py = 0.64,  pz = 0,     o_x = -0.35, o_y = 0.85, o_z = -0.6, o_rot = -13.5 },
-                [7] = { mdl = "Z_Base_M_lourd_haut_dra.mdl", plaque_mdl = "Z_Plaque_Type_B_Nf.mdl",         x = 0, y = 0, z = 1.860, px = 0,     py = 0.64,  pz = 0,     o_x = -0.1, o_y = 0.2, o_z = 1.86,  o_rot = 0 },
+                -- MATS LOURDS DRAPEAUX :
+                [6] = { mdl = "Z_Base_M_lourd_dra.mdl",      plaque_mdl = "Z_Plaque_Type_B_Nf.mdl", cage_mdl = "Z_Protection_EFGH_lourd.mdl", x = 0, y = 0, z = 0,     px = 0, py = 0.64,  pz = 0, o_x = -0.35, o_y = 0.85, o_z = -0.6, o_rot = -13.5 },
+                [7] = { mdl = "Z_Base_M_lourd_haut_dra.mdl", plaque_mdl = "Z_Plaque_Type_B_Nf.mdl", cage_mdl = "Z_Protection_EFGH_lourd.mdl", x = 0, y = 0, z = 1.860, px = 0, py = 0.64,  pz = 0, o_x = -0.1, o_y = 0.2, o_z = 1.86, o_rot = 0 },
                 
-                [8] = { mdl = "Z_Base_M_nacelle_moderne.mdl",plaque_mdl = "Z_Plaque_Nacelle_Type_B_Nf.mdl", x = -0.1, y = -1.35, z = 3.205, px = 0, py = 0, pz = 0, o_x = -0.825, o_y = -0.5, o_z = 3.25, o_rot = -13.5 }
+                [8] = { mdl = "Z_Base_M_nacelle_moderne.mdl",plaque_mdl = "Z_Plaque_Nacelle_Type_B_Nf.mdl", cage_mdl = nil, x = -0.1, y = -1.35, z = 3.205, px = 0, py = 0, pz = 0, o_x = -0.825, o_y = -0.5, o_z = 3.25, o_rot = -13.5 }
             }
-            
             local current_mast = mast_config[mast_idx] or mast_config[0]
 
             local base_z = 1.05
@@ -169,7 +197,6 @@ function data()
             local oz = (params.offset_z or 10) - 10
             local orot = ((params.offset_rot or 36) * 5) - 180
 
-            -- MATRICES MANUELLES PUR LUA
             local rad = math.rad(orot)
             local c = math.cos(rad)
             local s = math.sin(rad)
@@ -209,12 +236,28 @@ function data()
                 ox + (lx * c - ly * s), oy + (lx * s + ly * c), oz + lz_haut, 1
             }
 
-            -- NOUVEAU : LA MATRICE SPÉCIFIQUE DE L'ŒILLETON
+            local ly_rr = current_mast.y - 0.60
+            local lz_rr_bas = base_z + current_mast.z + 0.80
+            local lz_rr_haut = base_z + current_mast.z + 1.40
+            
+            local matrice_rr_bas = {
+                c,  s, 0, 0,
+               -s,  c, 0, 0,
+                0,  0, 1, 0,
+                ox + (lx * c - ly_rr * s), oy + (lx * s + ly_rr * c), oz + lz_rr_bas, 1
+            }
+            
+            local matrice_rr_haut = {
+                c,  s, 0, 0,
+               -s,  c, 0, 0,
+                0,  0, 1, 0,
+                ox + (lx * c - ly_rr * s), oy + (lx * s + ly_rr * c), oz + lz_rr_haut, 1
+            }
+
             local o_x = current_mast.o_x or 0
             local o_y = current_mast.o_y or 0
             local o_z = base_z + (current_mast.o_z or 0)
             
-            -- On additionne la rotation du joueur ET la rotation locale de 14° du mât
             local combo_rad = rad + math.rad(current_mast.o_rot or 0)
             local cc = math.cos(combo_rad)
             local cs = math.sin(combo_rad)
@@ -227,8 +270,19 @@ function data()
             }
 
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.mdl, transf = matrice_mat })
-            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_Type_B.mdl", transf = matrice_feux })
+            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_Type_G.mdl", transf = matrice_feux })
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.plaque_mdl, transf = matrice_plaque })
+            
+            if current_mast.cage_mdl then
+                local lz_cage = base_z + (current_mast.z or 0)
+                local matrice_cage = {
+                    c,  s, 0, 0,
+                   -s,  c, 0, 0,
+                    0,  0, 1, 0,
+                    ox, oy, oz + lz_cage, 1
+                }
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.cage_mdl, transf = matrice_cage })
+            end
 
             if display == "CARRE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux })
@@ -236,8 +290,19 @@ function data()
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Eteint.mdl", transf = matrice_oeilleton })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
+            elseif display == "ROUGE_CLI" then
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Cli_Allume.mdl", transf = matrice_feux })  
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
             elseif display == "VERT" then
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Allume.mdl", transf = matrice_feux })
+                if rr_state == 1 or rr_state == 2 then
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+                else
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Allume.mdl", transf = matrice_feux })
+                end
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
@@ -248,6 +313,18 @@ function data()
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+            end
+
+            if rr_state == 1 then
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_rr_bas })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_rr_haut })
+            elseif rr_state == 2 then
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_rr_bas })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_rr_haut })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_RR60_Allume.mdl", transf = matrice_rr_bas })
+            else
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_rr_bas })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_rr_haut })
             end
 
             table.insert(result.groundFaces, {  

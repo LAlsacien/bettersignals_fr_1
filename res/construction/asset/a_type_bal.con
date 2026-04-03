@@ -36,10 +36,9 @@ function data()
         order = 11111,
         params = {
             {
-                key = "bal_mode",
-                name = _("Régime du Signal"),
-                uiType = "BUTTON",
-                values = { _("Standard"), _("Jaune Cli."), _("Rouge Cli."), _("Annonce RC"), _("Pré-Annonce RC") },
+                key = "opt_jcli",
+                name = _("Activer le Jaune Clignotant"),
+                uiType = "CHECKBOX",
                 defaultIndex = 0,
             },
             {
@@ -90,32 +89,56 @@ function data()
                 terrainAlignmentLists = {}
             }
             
-            local my_mode = params.bal_mode or 0
+            -- 1. LECTURE DES OPTIONS
+            local has_jcli = false
+            if params.opt_jcli and tonumber(params.opt_jcli) == 1 then has_jcli = true end
+
+            -- 2. LECTURE DES WAYPOINTS
+            local force_rcli = 0
+            if params.paramsOverride and params.paramsOverride.rcli then force_rcli = tonumber(params.paramsOverride.rcli) end
+
+            -- 3. GESTION DES CANTONS
             local isGreen = (params.signal_state and params.signal_state == 1)
             local dist_red = 99
 
-            if not isGreen then
+            if not isGreen then 
                 dist_red = 0
             elseif params.following_signal then
-                if params.following_signal.signal_state == 0 then
+                if params.following_signal.signal_state == 0 then 
                     dist_red = 1
                 elseif params.following_signal.following_signal then
-                    if params.following_signal.following_signal.signal_state == 0 then
+                    if params.following_signal.following_signal.signal_state == 0 then 
                         dist_red = 2
-                    elseif params.following_signal.following_signal.following_signal and params.following_signal.following_signal.following_signal.signal_state == 0 then
+                    elseif params.following_signal.following_signal.following_signal and params.following_signal.following_signal.following_signal.signal_state == 0 then 
                         dist_red = 3
                     end
                 end
             end
 
+            -- 4. SÉQUENCES DE SIGNALISATION
             local display = "VERT"
-            if dist_red == 0 then display = "ROUGE"
-            elseif dist_red == 1 then if my_mode == 2 then display = "ROUGE_CLI" else display = "JAUNE" end
+            
+            if dist_red == 0 then 
+                display = "ROUGE" 
+                
+            elseif dist_red == 1 then 
+                if force_rcli == 1 then 
+                    display = "ROUGE_CLI" 
+                else 
+                    display = "JAUNE" 
+                end
+                
             elseif dist_red == 2 then
-                if my_mode == 1 then display = "JAUNE_CLI"
-                elseif my_mode == 3 or my_mode == 4 then display = "JAUNE"
-                else display = "VERT" end
-            elseif dist_red == 3 then if my_mode == 4 then display = "JAUNE_CLI" else display = "VERT" end
+                if force_rcli == 2 then 
+                    display = "JAUNE"
+                elseif has_jcli then 
+                    display = "JAUNE_CLI" 
+                else 
+                    display = "VERT" 
+                end
+                
+            elseif dist_red >= 3 then 
+                display = "VERT" 
             end
 
             local mast_idx = params.mast_type or 0

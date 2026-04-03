@@ -17,7 +17,7 @@ return {
                     -- LA CIBLE TYPE G (Mesh H)
                     {
                         materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl" },
-                        mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Cible_H_lod0.msh",
+                        mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Cible_G_lod0.msh",
                         name = "Cible_G",
                         transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
                     },
@@ -35,7 +35,7 @@ return {
                 children = {
                     {
                         materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl" },
-                        mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Cible_H_lod1.msh",
+                        mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Cible_G_lod1.msh",
                         name = "Cible_G",
                         transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
                     },
