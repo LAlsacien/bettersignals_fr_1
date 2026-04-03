@@ -33,7 +33,6 @@ function data()
                 type = "main",
                 isAnimated = false,
             }
-
             signals.signals['b_type_bal'] = {
                 type = "main",
                 isAnimated = false,
@@ -42,8 +41,8 @@ function data()
                 type = "main",
                 isAnimated = false,
             }
-            signals.signals['z_waypoint_rr'] = {
-                type = "pre",
+            signals.signals['e_type_bal'] = {
+                type = "main",
                 isAnimated = false,
             }
         end,
