@@ -25,8 +25,8 @@ function data()
     return {
         type = "ASSET_TRACK",
         description = {
-            name = _("BAL Type G - LED"),
-            description = _("Signalisation ferroviaire SNCF moderne de type G- Block Automatique Lumineux"),
+            name = _("Type G - LED"),
+            description = _("Signalisation ferroviaire SNCF moderne de type G - Block Automatique Lumineux"),
         },
         availability = { yearFrom = 2005 },
         skipOnInit = true,

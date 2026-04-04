@@ -25,7 +25,7 @@ function data()
     return {
         type = "ASSET_TRACK",
         description = {
-            name = _("BAL Type B - LED"),
+            name = _("Type C - LED"),
             description = _("Signalisation ferroviaire SNCF moderne de type C - Block Automatique Lumineux"),
         },
         availability = { yearFrom = 2005 },
