@@ -1,0 +1,58 @@
+function data()
+return {
+	boundingInfo = {
+		bbMax = { 5.1191720962524, 2.9529583454132, 4.1497240066528, },
+		bbMin = { 3.1394908428192, 1.8529582023621, -1.3000025749207, },
+	},
+	collider = {
+		params = { halfExtents = { 0.98984062671661, 0.55000007152557, 2.7248632907867, }, },
+		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+		type = "BOX",
+	},
+	lods = {
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_Violet_LED.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Feu_Violet_Allume_lod0.msh",
+						name = "SNCF_Feu_Violet_Allume",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -0.05, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false,
+			visibleFrom = 0,
+			visibleTo = 85,
+		},
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_Violet_LED.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Feu_Violet_Allume_lod1.msh",
+						name = "SNCF_Feu_Violet_Allume",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false,
+			visibleFrom = 85,
+			visibleTo = 150,
+		},
+	},
+	metadata = {
+		availability = { yearFrom = 2005, yearTo = 0, },
+		cost = { price = 0, priceScale = 1, },
+		description = {
+			description = _("Lentille Violet"),
+			name = _("Lentille Violet"),
+		},
+	},
+	version = 1,
+}
+end

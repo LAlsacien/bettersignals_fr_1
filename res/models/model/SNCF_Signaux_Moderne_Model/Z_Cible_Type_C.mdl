@@ -1,0 +1,62 @@
+function data()
+return {
+	boundingInfo = {
+		bbMax = { 5.1191720962524, 2.9529583454132, 4.1497240066528, },
+		bbMin = { 3.1394908428192, 1.8529582023621, -1.3000025749207, },
+	},
+	collider = {
+		params = { halfExtents = { 0.98984062671661, 0.55000007152557, 2.7248632907867, }, },
+		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+		type = "BOX",
+	},
+	lods = {
+		{ -- LOD 0
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl"},
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Cible_C_lod0.msh",
+						name = "SNCF_Cible_B",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false, visibleFrom = 0, visibleTo = 85,
+		},
+		{ -- LOD 1
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl"},
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Cible_C_lod1.msh",
+						name = "SNCF_Cible_C",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false, visibleFrom = 85, visibleTo = 150,
+		},
+		{ -- LOD 2 (Pas d'œilleton à cette distance selon GrabiouL)
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl"},
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Cible_B_lod2.msh",
+						name = "SNCF_Cible_B",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false, visibleFrom = 150, visibleTo = 250,
+		},
+	},
+	metadata = { },
+	version = 1,
+}
+end

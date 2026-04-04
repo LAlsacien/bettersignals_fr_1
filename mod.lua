@@ -49,6 +49,10 @@ function data()
                 type = "main",
                 isAnimated = false,
             }
+            signals.signals['c_type_bal'] = {
+                type = "main",
+                isAnimated = false,
+            }
         end,
     }
 end
