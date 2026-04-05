@@ -57,6 +57,10 @@ function data()
                 type = "main",
                 isAnimated = false,
             }
+            signals.signals['h_type_bal'] = {
+                type = "main",
+                isAnimated = false,
+            }
         end,
     }
 end

@@ -42,6 +42,13 @@ function data()
             defaultIndex = 0,
             },
             {
+                key = "opt_pos",
+                name = _("Position du signal"),
+                uiType = "COMBOBOX",
+                values = { _("Gauche"), _("Droite") },
+                defaultIndex = 0,
+            },
+            {
                 key = "mast_type",
                 name = _("Type de Mât"),
                 uiType = "COMBOBOX",
@@ -50,6 +57,13 @@ function data()
                     _("Léger Haut & Drapeau"), _("Lourd"), _("Lourd Haut"), 
                     _("Lourd & Drapeau"), _("Lourd Haut & Drapeau"), _("Nacelle Moderne") 
                 },
+                defaultIndex = 0,
+            },
+            {
+                key = "add_fleche",
+                name = _("Ajouter une Flèche"),
+                uiType = "COMBOBOX",
+                values = { _("Aucune"), _("Flèche Simple"), _("Flèche Double"), _("Flèche Triple"), _("Flèche Droite") },
                 defaultIndex = 0,
             },
             {
@@ -197,20 +211,42 @@ function data()
             local oz = (params.offset_z or 10) - 10
             local orot = ((params.offset_rot or 36) * 5) - 180
 
+            local is_droite = (params.opt_pos and params.opt_pos == 1)
+            local is_nacelle = (current_mast.mdl and string.find(current_mast.mdl, "nacelle")) ~= nil
+            
+            local local_shift_y = 0
+            local final_mast_mdl = current_mast.mdl
+            
+            if is_droite then
+                if is_nacelle then
+                    local_shift_y = -2.4 
+                else
+                    local_shift_y = -4.8 
+                    final_mast_mdl = string.gsub(final_mast_mdl, ".mdl", "_Droite.mdl")
+                end
+            end
+            -- ===============================================
+
             local rad = math.rad(orot)
             local c = math.cos(rad)
             local s = math.sin(rad)
 
+            local mast_local_y = 0
+            if is_droite then
+                mast_local_y = local_shift_y
+            end
+            
             local matrice_mat = {
                 c,  s, 0, 0,
                -s,  c, 0, 0,
                 0,  0, 1, 0,
-                ox, oy, oz + base_z, 1
+                ox + (0 * c - mast_local_y * s), oy + (0 * s + mast_local_y * c), oz + base_z, 1
             }
 
-            local lx = current_mast.x
-            local ly = current_mast.y
-            local lz = base_z + current_mast.z
+            local lx = current_mast.x or 0
+            local ly = (current_mast.y or 0) + local_shift_y
+            local lz = base_z + (current_mast.z or 0)
+            
             local matrice_feux = {
                 c,  s, 0, 0,
                -s,  c, 0, 0,
@@ -218,17 +254,7 @@ function data()
                 ox + (lx * c - ly * s), oy + (lx * s + ly * c), oz + lz, 1
             }
 
-            local px = current_mast.px
-            local py = current_mast.py
-            local pz = base_z + current_mast.pz
-            local matrice_plaque = {
-                c,  s, 0, 0,
-               -s,  c, 0, 0,
-                0,  0, 1, 0,
-                ox + (px * c - py * s), oy + (px * s + py * c), oz + pz, 1
-            }
-
-            local lz_haut = base_z + current_mast.z + 0.66
+            local lz_haut = base_z + (current_mast.z or 0) + 0.66
             local matrice_feux_haut = {
                 c,  s, 0, 0,
                -s,  c, 0, 0,
@@ -236,9 +262,9 @@ function data()
                 ox + (lx * c - ly * s), oy + (lx * s + ly * c), oz + lz_haut, 1
             }
 
-            local ly_rr = current_mast.y - 0.60
-            local lz_rr_bas = base_z + current_mast.z + 0.80
-            local lz_rr_haut = base_z + current_mast.z + 1.40
+            local ly_rr = (current_mast.y or 0) - 0.60 + local_shift_y
+            local lz_rr_bas = base_z + (current_mast.z or 0) + 0.80
+            local lz_rr_haut = base_z + (current_mast.z or 0) + 1.40
             
             local matrice_rr_bas = {
                 c,  s, 0, 0,
@@ -246,7 +272,6 @@ function data()
                 0,  0, 1, 0,
                 ox + (lx * c - ly_rr * s), oy + (lx * s + ly_rr * c), oz + lz_rr_bas, 1
             }
-            
             local matrice_rr_haut = {
                 c,  s, 0, 0,
                -s,  c, 0, 0,
@@ -254,11 +279,55 @@ function data()
                 ox + (lx * c - ly_rr * s), oy + (lx * s + ly_rr * c), oz + lz_rr_haut, 1
             }
 
+            local px = current_mast.px or 0
+            local py = current_mast.py or 0
+            if is_droite and not is_nacelle then
+                py = -py
+            end
+            py = py + local_shift_y
+            
+            local pz = base_z + (current_mast.pz or 0)
+            local matrice_plaque = {
+                c,  s, 0, 0,
+               -s,  c, 0, 0,
+                0,  0, 1, 0,
+                ox + (px * c - py * s), oy + (px * s + py * c), oz + pz, 1
+            }
+
             local o_x = current_mast.o_x or 0
             local o_y = current_mast.o_y or 0
-            local o_z = base_z + (current_mast.o_z or 0)
+            local raw_oz = current_mast.o_z or 0
+            local o_rot = current_mast.o_rot or 0
             
-            local combo_rad = rad + math.rad(current_mast.o_rot or 0)
+            if is_droite then
+                if is_nacelle then
+                elseif mast_idx == 0 or mast_idx == 1 or mast_idx == 2 or mast_idx == 3 then
+                    o_x = -1.05
+                    o_y = 0.9
+                    raw_oz = (mast_idx == 1 or mast_idx == 3) and 1.86 or 0
+                    o_rot = -30
+                elseif mast_idx == 5 or mast_idx == 7 then
+                    o_x = -1.05
+                    o_y = 0.9
+                    raw_oz = 1.86
+                    o_rot = -30
+                elseif mast_idx == 4 then
+                    o_x = -0.35
+                    o_y = 0
+                    raw_oz = -0.6
+                    o_rot = -13.5
+                elseif mast_idx == 6 then
+                    o_x = -1.15
+                    o_y = 0.7
+                    raw_oz = 0
+                    o_rot = -30
+                end
+            end
+            
+            o_y = o_y + local_shift_y
+            
+            local o_z = base_z + raw_oz
+            local combo_rad = rad + math.rad(o_rot)
             local cc = math.cos(combo_rad)
             local cs = math.sin(combo_rad)
 
@@ -269,20 +338,68 @@ function data()
                 ox + (o_x * c - o_y * s), oy + (o_x * s + o_y * c), oz + o_z, 1
             }
 
-            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.mdl, transf = matrice_mat })
+             local f_type = params.add_fleche or 0
+            
+            if f_type > 0 then
+                local matrice_fleche = {
+                    c,  s, 0, 0,
+                   -s,  c, 0, 0,
+                    0,  0, 1, 0,
+                    ox, oy, oz, 1
+                }
+
+                local f_prefixes = { "", "SNCF_Fleche", "SNCF_Fleche2", "SNCF_Fleche3", "SNCF_FlecheV" }
+                local f_prefix = f_prefixes[f_type + 1]
+                
+                local f_pos = is_droite and "_dg" or "_gd"
+                
+                local f_mast_map = {
+                    [0] = "_l",   -- Léger
+                    [1] = "_lh",  -- Léger Haut
+                    [2] = "_l",   -- Léger & Drapeau
+                    [3] = "_lh",  -- Léger Haut & Drapeau
+                    [4] = "_lo",  -- Lourd
+                    [5] = "_loh", -- Lourd Haut
+                    [6] = "_loD", -- Lourd & Drapeau
+                    [7] = "_lohD" -- Lourd Haut & Drapeau
+                }
+                
+                local f_mast = f_mast_map[mast_idx]
+                
+                if f_mast then
+                    local fleche_mdl = f_prefix .. f_pos .. f_mast .. ".mdl"
+                    table.insert(result.models, { id = "SNCF_Asset_Model/" .. fleche_mdl, transf = matrice_fleche })
+                end
+            end
+            
+            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. final_mast_mdl, transf = matrice_mat })
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_Type_G.mdl", transf = matrice_feux })
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.plaque_mdl, transf = matrice_plaque })
             
-            if current_mast.cage_mdl then
+            local draw_cage = true
+            local extra_cage_y = 0
+            
+            if is_droite then
+                if mast_idx == 5 or mast_idx == 6 or mast_idx == 7 then
+                    draw_cage = false -- 
+                elseif mast_idx == 0 or mast_idx == 1 or mast_idx == 2 or mast_idx == 3 then
+                    extra_cage_y = -0.31
+                end
+            end
+
+            if current_mast.cage_mdl and draw_cage then
                 local lz_cage = base_z + (current_mast.z or 0)
+                local cage_x = 0
+                local cage_y = local_shift_y + extra_cage_y
+                
                 local matrice_cage = {
                     c,  s, 0, 0,
                    -s,  c, 0, 0,
                     0,  0, 1, 0,
-                    ox, oy, oz + lz_cage, 1
+                    ox + (cage_x * c - cage_y * s), oy + (cage_x * s + cage_y * c), oz + lz_cage, 1
                 }
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.cage_mdl, transf = matrice_cage })
-            end
+            end         
 
             local is_combo_rr60 = false
             if display == "JAUNE_CLI" and rr_state == 2 then
