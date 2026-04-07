@@ -60,6 +60,13 @@ function data()
                 defaultIndex = 0,
             },
             {
+                key = "add_idd",
+                name = _("Ajouter Indicateur de Direction (ID)"),
+                uiType = "COMBOBOX",
+                values = { _("Aucune"), _("ID 2 feux"), _("ID 3 feux"), _("ID 4 feux"), _("ID 5 feux") },
+                defaultIndex = 0,
+            },
+            {
                 key = "add_fleche",
                 name = _("Ajouter une Flèche"),
                 uiType = "COMBOBOX",
@@ -369,6 +376,86 @@ function data()
                 if f_mast then
                     local fleche_mdl = f_prefix .. f_pos .. f_mast .. ".mdl"
                     table.insert(result.models, { id = "SNCF_Asset_Model/" .. fleche_mdl, transf = matrice_fleche })
+                end
+            end
+
+            local idd_type = params.add_idd or 0 
+            
+            if idd_type > 0 and (mast_idx >= 4 and mast_idx <= 8) then
+                
+                local feux_totaux = idd_type + 1 
+                
+                local feux_allumes = 1 
+                if params.paramsOverride and params.paramsOverride.direction then
+                    feux_allumes = tonumber(params.paramsOverride.direction) or 1
+                end
+                
+                if dist_red == 0 then
+                    feux_allumes = 0
+                end
+                
+                if feux_allumes > feux_totaux then 
+                    feux_allumes = feux_totaux 
+                end
+
+                local idd_mast_suffix = ""
+                local id_lx, id_ly, id_lz = 0, 0, 0
+                local idd_base_x = 1.0
+
+                if mast_idx == 4 or mast_idx == 6 then 
+                    idd_mast_suffix = "_m"
+                    id_lx, id_ly, id_lz = 0.2195, 0.35, 1.6422
+                elseif mast_idx == 5 or mast_idx == 7 then 
+                    idd_mast_suffix = "_mh"
+                    id_lx, id_ly, id_lz = 0.2195, 0.35, 3.5022
+                elseif mast_idx == 8 then 
+                    idd_mast_suffix = "_n"
+
+                    local shift_nacelle_x = -0.05 
+                    
+                    idd_base_x = 1.0 + shift_nacelle_x
+                    id_lx = 0.3395 + shift_nacelle_x
+                    id_ly = -2.00
+                    id_lz = 4.8479
+                end
+
+                if feux_totaux >= 4 then
+                    id_ly = id_ly + 0.35
+                end
+
+                local droite_suffix = ""
+                if is_droite and mast_idx ~= 8 then
+                    droite_suffix = "_Droite"
+                end
+                
+                local matrice_idd_base = {
+                    c,  s, 0, 0,
+                   -s,  c, 0, 0,
+                    0,  0, 1, 0,
+                    ox + (idd_base_x * c - mast_local_y * s), oy + (idd_base_x * s + mast_local_y * c), oz + base_z, 1
+                }
+                
+                local idd_filename = string.format("Z_IDD_Base_%dF%s%s.mdl", feux_totaux, idd_mast_suffix, droite_suffix)
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. idd_filename, transf = matrice_idd_base })
+
+                for i = 1, feux_totaux do
+                    local offset_trou_y = id_ly - ((i - 1) * 0.35)
+                    
+                    local target_y = mast_local_y + offset_trou_y
+                    local target_z = base_z + id_lz
+                    
+                    local matrice_feu_id = {
+                        c,  s, 0, 0,
+                       -s,  c, 0, 0,
+                        0,  0, 1, 0,
+                        ox + (id_lx * c - target_y * s), oy + (id_lx * s + target_y * c), oz + target_z, 1
+                    }
+                    
+                    if i <= feux_allumes then
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Allume.mdl", transf = matrice_feu_id })
+                    else
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Eteint.mdl", transf = matrice_feu_id })
+                    end
                 end
             end
             

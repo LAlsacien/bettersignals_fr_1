@@ -1,0 +1,80 @@
+function data()
+return {
+	boundingInfo = {
+		bbMax = { 3.4410157203674, 0.63578645586967, 9.2518046951294, },
+		bbMin = { 2.852398490906, -0.53709490299225, 7.6479797363281, },
+	},
+	collider = {
+		params = { halfExtents = { 0.40301847457886, 0.34117221832275, 1.2293182611465, }, },
+		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+		type = "BOX",
+	},
+	lods = {
+		{ -- LOD 0
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl", },
+						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Cible_IDD_2F_Nacelle_lod0.msh",
+						name = "SNCF_Cible_IDD_2F_Nacelle",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.12, -2.35, 3.205, 1, },
+					},
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
+						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Support_IDD_Nacelle_lod0.msh",
+						name = "SNCF_Support_IDD_Nacelle",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 1, },
+			},
+			static = false, visibleFrom = 0, visibleTo = 85,
+		},
+		{ -- LOD 1
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl", },
+						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Cible_IDD_2F_lod1.msh",
+						name = "SNCF_Cible_IDD_2F",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.12, -2.35, 3.205, 1, },
+					},
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
+						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Support_IDD_Nacelle_lod0.msh",
+						name = "SNCF_Support_IDD_Nacelle",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 1, },
+			},
+			static = false, visibleFrom = 85, visibleTo = 150,
+		},
+		{ -- LOD 2
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl", },
+						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Cible_IDD_2F_lod2.msh",
+						name = "SNCF_Cible_IDD_2F",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0.12, -2.35, 3.205, 1, },
+					},
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
+						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Support_IDD_Nacelle_lod0.msh",
+						name = "SNCF_Support_IDD_Nacelle",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 0, 1, },
+			},
+			static = false, visibleFrom = 150, visibleTo = 250,
+		},
+	},
+	metadata = { },
+	version = 1,
+}
+end
