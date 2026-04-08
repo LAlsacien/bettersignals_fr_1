@@ -1,0 +1,70 @@
+function data()
+return {
+	boundingInfo = {
+		bbMax = { 1.0187768936157, 2.9529583454132, 2.088445186615, },
+		bbMin = { -0.12, 1.8529582023621, -1.3000025749207, },
+	},
+	collider = {
+		params = {
+			halfExtents = { 0.57688677310944, 0.47898441553116, 1.5097054243088, },
+		},
+		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+		type = "BOX",
+	},
+	lods = {
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
+						mesh = "SNCF_Tableau_Moderne_Mesh/SNCF_Support_Tableau_Petit_lod0.msh",
+						name = "SNCF_Support_Tableau_Petit",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
+			},
+			static = false,
+			visibleFrom = 0,
+			visibleTo = 85,
+		},
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
+						mesh = "SNCF_Tableau_Moderne_Mesh/SNCF_Support_Tableau_Petit_lod1.msh",
+						name = "SNCF_Support_Tableau_Petit",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false,
+			visibleFrom = 85,
+			visibleTo = 150,
+		},
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
+						mesh = "SNCF_Tableau_Moderne_Mesh/SNCF_Support_Tableau_Petit_lod2.msh",
+						name = "SNCF_Support_Tableau_Petit",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
+			},
+			static = false,
+			visibleFrom = 150,
+			visibleTo = 250,
+		},
+	},
+	metadata = { },
+	version = 1,
+}
+end

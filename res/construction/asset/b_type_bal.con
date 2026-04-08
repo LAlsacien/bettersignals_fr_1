@@ -67,10 +67,24 @@ function data()
                 defaultIndex = 0,
             },
             {
-                key = "add_idd",
-                name = _("Indicateur de Direction (ID)"),
+                key = "tab_mat",
+                name = _("Tableau - Position 1"),
                 uiType = "COMBOBOX",
-                values = { _("Aucun"), _("ID 2 Feux"), _("ID 3 Feux"), _("ID 4 Feux"), _("ID 5 Feux") },
+                values = { _("Aucun"), _("Tableau G"), _("Tableau D"), _("TECS"), _("TSCS"), _("TECS/TSCS (2 états)"), _("Tableau G/D (2 états)"), _("TSCS / Tab G (2 états)"), _("Tableau Impasse"), _("BLJH") },
+                defaultIndex = 0,
+            },
+            {
+                key = "tab_indep_1",
+                name = _("Tableau - Position 2"),
+                uiType = "COMBOBOX",
+                values = { _("Aucun"), _("Tableau G"), _("Tableau D"), _("TECS (TSCS si droite)"), _("TSCS (TECS si droite)"), _("TECS/TSCS (2 états)"), _("Tableau G/D (2 états)"), _("TSCS / Tab G (2 états)"), _("Tableau Impasse"), _("BLJH") },
+                defaultIndex = 0,
+            },
+            {
+                key = "tab_indep_2",
+                name = _("Tableau - Position 3"),
+                uiType = "COMBOBOX",
+                values = { _("Aucun"), _("Tableau G"), _("Tableau D"), _("TECS"), _("TSCS"), _("TECS/TSCS (2 états)"), _("Tableau G/D (2 états)"), _("TSCS / Tab G (2 états)"), _("Tableau Impasse"), _("BLJH") },
                 defaultIndex = 0,
             },
             {
@@ -254,7 +268,26 @@ function data()
             end
             py = py + local_shift_y
             
-            local pz = base_z + (current_mast.pz or 0)
+            local t1_active = false
+            local t1_val = params.tab_mat or 0
+            if t1_val > 0 and t1_val ~= 8 and mast_idx >= 4 then
+                if not (params.add_idd and params.add_idd > 0) then t1_active = true end
+            end
+
+            local t2_active = false
+            local t2_val = params.tab_indep_1 or 0
+            if t2_val > 0 and t2_val ~= 9 then t2_active = true end
+
+            local plaque_z_bonus = 0
+            
+            if (t1_active or t2_active) and mast_idx ~= 8 then
+                if mast_idx == 1 or mast_idx == 3 or mast_idx == 5 or mast_idx == 7 then
+                    plaque_z_bonus = 1.6
+                end
+            end
+
+            local pz = base_z + (current_mast.pz or 0) + plaque_z_bonus
+
             local matrice_plaque = {
                 c,  s, 0, 0,
                -s,  c, 0, 0,
@@ -416,6 +449,181 @@ function data()
                         table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Allume.mdl", transf = matrice_feu_id })
                     else
                         table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Eteint.mdl", transf = matrice_feu_id })
+                    end
+                end
+            end
+                     
+            local is_mat_drapeau = (mast_idx == 2 or mast_idx == 3 or mast_idx == 6 or mast_idx == 7)
+            
+            local tab_codes = {
+                [2] = "TG", [3] = "TD", [4] = "TECS", [5] = "TSCS", 
+                [6] = "TECS_TSCS", [7] = "TGD", [8] = "TSCS_TG", 
+                [9] = "IMP", [10] = "BLJH"
+            }
+            
+            local droite_suffix = is_droite and "_Droite" or ""
+
+            local function is_tableau_allume(tab_name)
+
+                if dist_red == 0 then return false end
+                
+                if not params.paramsOverride then return false end
+                
+                local wp_key = string.lower(tab_name)
+                if tab_name == "TG" then wp_key = "tableau_g" end
+                if tab_name == "TD" then wp_key = "tableau_d" end
+                
+                local override_val = tonumber(params.paramsOverride[wp_key])
+                if override_val and override_val == 1 then
+                    return true
+                end
+                
+                return false
+            end
+
+            -- ==========================================
+            -- SLOT 1 : SUR LE MÂT (ou Nacelle Droite)
+            -- ==========================================
+            local t1 = params.tab_mat or 0
+            if t1 > 0 then
+                local render_t1 = true
+                
+                if (params.add_idd and params.add_idd > 0) then render_t1 = false end
+                if t1 == 8 then render_t1 = false end
+                if mast_idx < 4 then render_t1 = false end
+                
+                if render_t1 then
+                    local tab_name = tab_codes[t1+1]
+                    local base_mdl = tab_name
+                    local sup_mdl = "Z_Sup_Signal"
+                    
+                    local s_x, s_y, s_z = 0, 0, 0 
+                    local c_x, c_y, c_z = 0, 0, 0 
+                    
+                    if mast_idx == 5 or mast_idx == 7 then 
+                        s_z = 1.86; c_z = 1.86 
+                    elseif mast_idx == 8 then 
+                        sup_mdl = "Z_Sup_Nacelle"
+                        s_x = 0;    s_y = 0;    s_z = 0 
+                        c_x = 0.12; c_y = -2.2; c_z = 3.205
+                    end
+
+                    if sup_mdl ~= "" then
+                        local final_sy = mast_local_y + s_y
+                        local matrice_s1 = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(s_x*c-final_sy*s), oy+(s_x*s+final_sy*c), oz+base_z+s_z, 1 }
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. sup_mdl .. ".mdl", transf = matrice_s1 })
+                    end
+
+                    local final_cy = mast_local_y + c_y
+                    local matrice_c1 = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(c_x*c-final_cy*s), oy+(c_x*s+final_cy*c), oz+base_z+c_z, 1 }
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. tab_name .. droite_suffix .. ".mdl", transf = matrice_c1 })
+                    
+                    if is_tableau_allume(tab_name) then
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name .. "_Allume" .. droite_suffix .. ".mdl", transf = matrice_c1 })
+                    else
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name .. "_Eteint" .. droite_suffix .. ".mdl", transf = matrice_c1 })
+                    end
+                end
+            end
+
+            -- ==========================================
+            -- SLOT 2 : MÂT NORMAL (ou Nacelle Gauche)
+            -- ==========================================
+            local t2 = params.tab_indep_1 or 0
+            local t2_is_drapeau = is_mat_drapeau
+            
+            if t2 > 0 then
+                local render_t2 = true
+                if t2 == 9 then render_t2 = false end -- Pas de BLJH
+                
+                if render_t2 then
+                    local tab_name = tab_codes[t2+1]
+                    local base_mdl = tab_name
+                    local sup_mdl = "Z_Sup_Normal"
+                    
+                    local s_x = -1.2
+                    local s_y = t2_is_drapeau and 0.425 or 0
+                    local s_z = 0
+                    
+                    local c_x = s_x - 1.5
+                    local c_y = s_y - 0.025
+                    local c_z = -3.25
+                    
+                    if mast_idx == 8 then
+                        sup_mdl = "Z_Sup_Nacelle"
+                        s_x = 0;  s_y = 1.9;  s_z = 0
+                        c_x = 0.12; c_y = -0.3; c_z = 3.205
+                    end
+
+                    if sup_mdl ~= "" then
+                        local final_sy = mast_local_y + s_y
+                        local matrice_s2 = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(s_x*c-final_sy*s), oy+(s_x*s+final_sy*c), oz+base_z+s_z, 1 }
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. sup_mdl .. ".mdl", transf = matrice_s2 })
+                    end
+
+                    local final_cy = mast_local_y + c_y
+                    local matrice_c2 = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(c_x*c-final_cy*s), oy+(c_x*s+final_cy*c), oz+base_z+c_z, 1 }
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. tab_name .. droite_suffix .. ".mdl", transf = matrice_c2 })
+                    
+                    if is_tableau_allume(tab_name) then
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name .. "_Allume" .. droite_suffix .. ".mdl", transf = matrice_c2 })
+                    else
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name .. "_Eteint" .. droite_suffix .. ".mdl", transf = matrice_c2 })
+                    end
+                end
+            end
+
+            -- ==========================================
+            -- SLOT 3 : PETIT MÂT (ou Nacelle Gauche Superposée)
+            -- ==========================================
+            local t3 = params.tab_indep_2 or 0
+            local t3_is_drapeau = is_mat_drapeau
+            
+            if t3 > 0 then
+                local render_t3 = true
+                if t3 == 9 then render_t3 = false end
+                
+                if render_t3 then
+                    local tab_name = tab_codes[t3+1]
+                    local base_mdl = tab_name
+                    local sup_mdl = "Z_Sup_Petit"
+
+                    local s_x = -3.5
+                    local s_y = t3_is_drapeau and 0.425 or 0
+                    local s_z = 0
+                    
+                    if t2 == 0 and mast_idx ~= 8 then
+                        s_x = -1.2
+                    end
+                    
+                    local c_x = s_x - 1.5
+                    local c_y = s_y - 0.025
+                    local c_z = -4.0
+                    
+                    local c_x = s_x - 1.5
+                    local c_y = s_y - 0.025
+                    local c_z = -4.0
+                    
+                    if mast_idx == 8 then
+                        sup_mdl = "Z_Sup_Nacelle" 
+                        s_x = 0;  s_y = 1.9;  s_z = 0.85
+                        c_x = 0.12; c_y = -0.3; c_z = 4.055
+                    end
+
+                    if sup_mdl ~= "" then
+                        local final_sy = mast_local_y + s_y
+                        local matrice_s3 = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(s_x*c-final_sy*s), oy+(s_x*s+final_sy*c), oz+base_z+s_z, 1 }
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. sup_mdl .. ".mdl", transf = matrice_s3 })
+                    end
+
+                    local final_cy = mast_local_y + c_y
+                    local matrice_c3 = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(c_x*c-final_cy*s), oy+(c_x*s+final_cy*c), oz+base_z+c_z, 1 }
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. tab_name .. droite_suffix .. ".mdl", transf = matrice_c3 })
+                    
+                    if is_tableau_allume(tab_name) then
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name .. "_Allume" .. droite_suffix .. ".mdl", transf = matrice_c3 })
+                    else
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name .. "_Eteint" .. droite_suffix .. ".mdl", transf = matrice_c3 })
                     end
                 end
             end
