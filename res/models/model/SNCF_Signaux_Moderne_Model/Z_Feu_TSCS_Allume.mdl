@@ -16,9 +16,9 @@ return {
 			node = {
 				children = {
 					{
-						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
-						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Support_Tableau_Droite_lod0.msh",
-						name = "SNCF_Support_Tableau_Droite",
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TCS_Moderne.mtl", },
+						mesh = "SNCF_Tableau_Moderne_Mesh/SNCF_Feu_TSCS_Allume_lod0.msh",
+						name = "SNCF_Feu_TSCS_Allume",
 						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 					},
 				},
@@ -33,9 +33,9 @@ return {
 			node = {
 				children = {
 					{
-						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
-						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Support_Tableau_lod1_Droite.msh",
-						name = "SNCF_Support_Tableau_Droite",
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TCS_Moderne.mtl", },
+						mesh = "SNCF_Tableau_Moderne_Mesh/SNCF_Feu_TSCS_Allume_lod0.msh",
+						name = "SNCF_Feu_TSCS_Allume",
 						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 					},
 				},
@@ -45,23 +45,6 @@ return {
 			static = false,
 			visibleFrom = 85,
 			visibleTo = 150,
-		},
-		{
-			node = {
-				children = {
-					{
-						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
-						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Support_IDD_lod2_Droite.msh",
-						name = "SNCF_Support_IDD_Droite",
-						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
-					},
-				},
-				name = "RootNode",
-				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 },
-			},
-			static = false,
-			visibleFrom = 150,
-			visibleTo = 250,
 		},
 	},
 	metadata = { },

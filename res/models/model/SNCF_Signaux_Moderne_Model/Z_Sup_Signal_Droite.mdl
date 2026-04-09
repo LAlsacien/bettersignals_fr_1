@@ -18,7 +18,7 @@ return {
 					{
 						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
 						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Support_Tableau_Droite_lod0.msh",
-						name = "SNCF_Support_Tableau_Droite",
+						name = "SNCF_Support_Tableau",
 						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 					},
 				},
@@ -35,7 +35,7 @@ return {
 					{
 						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
 						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Support_Tableau_lod1_Droite.msh",
-						name = "SNCF_Support_Tableau_Droite",
+						name = "SNCF_Support_Tableau",
 						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 					},
 				},
@@ -52,7 +52,7 @@ return {
 					{
 						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
 						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Support_IDD_lod2_Droite.msh",
-						name = "SNCF_Support_IDD_Droite",
+						name = "SNCF_Support_IDD",
 						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 					},
 				},

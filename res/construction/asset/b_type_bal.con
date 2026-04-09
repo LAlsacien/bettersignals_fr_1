@@ -36,6 +36,13 @@ function data()
         order = 11111,
         params = {
             {
+                key = "opt_sens",
+                name = _("Sens de circulation normal"),
+                uiType = "COMBOBOX",
+                values = { _("À gauche (Standard)"), _("À droite (Alsace/Moselle)") },
+                defaultIndex = 0,
+            },
+            {
             key = "opt_jcli",
             name = _("Activer le Jaune Clignotant"),
             uiType = "CHECKBOX",
@@ -77,7 +84,7 @@ function data()
                 key = "tab_indep_1",
                 name = _("Tableau - Position 2"),
                 uiType = "COMBOBOX",
-                values = { _("Aucun"), _("Tableau G"), _("Tableau D"), _("TECS (TSCS si droite)"), _("TSCS (TECS si droite)"), _("TECS/TSCS (2 états)"), _("Tableau G/D (2 états)"), _("TSCS / Tab G (2 états)"), _("Tableau Impasse"), _("BLJH") },
+                values = { _("Aucun"), _("Tableau G"), _("Tableau D"), _("TECS"), _("TSCS"), _("TECS/TSCS (2 états)"), _("Tableau G/D (2 états)"), _("TSCS / Tab G (2 états)"), _("Tableau Impasse"), _("BLJH") },
                 defaultIndex = 0,
             },
             {
@@ -212,6 +219,8 @@ function data()
             local orot = ((params.offset_rot or 36) * 5) - 180
 
             local is_droite = (params.opt_pos and params.opt_pos == 1)
+            local is_circ_droite = (params.opt_sens and params.opt_sens == 1)
+            local swap_tecs_tscs = is_circ_droite
             local is_nacelle = (current_mast.mdl and string.find(current_mast.mdl, "nacelle")) ~= nil
             
             local local_shift_y = 0 
@@ -259,40 +268,6 @@ function data()
                -s,  c, 0, 0,
                 0,  0, 1, 0,
                 ox + (lx * c - ly * s), oy + (lx * s + ly * c), oz + lz_haut, 1
-            }
- 
-            local px = current_mast.px or 0
-            local py = current_mast.py or 0
-            if is_droite and not is_nacelle then
-                py = -py
-            end
-            py = py + local_shift_y
-            
-            local t1_active = false
-            local t1_val = params.tab_mat or 0
-            if t1_val > 0 and t1_val ~= 8 and mast_idx >= 4 then
-                if not (params.add_idd and params.add_idd > 0) then t1_active = true end
-            end
-
-            local t2_active = false
-            local t2_val = params.tab_indep_1 or 0
-            if t2_val > 0 and t2_val ~= 9 then t2_active = true end
-
-            local plaque_z_bonus = 0
-            
-            if (t1_active or t2_active) and mast_idx ~= 8 then
-                if mast_idx == 1 or mast_idx == 3 or mast_idx == 5 or mast_idx == 7 then
-                    plaque_z_bonus = 1.6
-                end
-            end
-
-            local pz = base_z + (current_mast.pz or 0) + plaque_z_bonus
-
-            local matrice_plaque = {
-                c,  s, 0, 0,
-               -s,  c, 0, 0,
-                0,  0, 1, 0,
-                ox + (px * c - py * s), oy + (px * s + py * c), oz + pz, 1
             }
 
             local o_x = current_mast.o_x or 0
@@ -428,7 +403,7 @@ function data()
                     0,  0, 1, 0,
                     ox + (idd_base_x * c - mast_local_y * s), oy + (idd_base_x * s + mast_local_y * c), oz + base_z, 1
                 }
-                
+
                 local idd_filename = string.format("Z_IDD_Base_%dF%s%s.mdl", feux_totaux, idd_mast_suffix, droite_suffix)
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. idd_filename, transf = matrice_idd_base })
 
@@ -463,22 +438,86 @@ function data()
             
             local droite_suffix = is_droite and "_Droite" or ""
 
-            local function is_tableau_allume(tab_name)
+            -- === LE MOTEUR D'AFFICHAGE DYNAMIQUE ===
+            local function get_tableau_state(tab_name_brut)
+                local tab_final = tab_name_brut
+                local cible_base = tab_name_brut -- NOUVEAU : Nom strict pour la tôle
+                local is_lit = false
+                local is_2e = false 
 
-                if dist_red == 0 then return false end
-                
-                if not params.paramsOverride then return false end
-                
-                local wp_key = string.lower(tab_name)
-                if tab_name == "TG" then wp_key = "tableau_g" end
-                if tab_name == "TD" then wp_key = "tableau_d" end
-                
-                local override_val = tonumber(params.paramsOverride[wp_key])
-                if override_val and override_val == 1 then
-                    return true
+                local wp_ipcs = params.paramsOverride and tonumber(params.paramsOverride.ipcs)
+                local wp_tg = params.paramsOverride and tonumber(params.paramsOverride.tableau_g) or 0
+                local wp_td = params.paramsOverride and tonumber(params.paramsOverride.tableau_d) or 0
+
+                -- 1. RÉSOLUTION LOGIQUE
+                if tab_name_brut == "TECS_TSCS" then
+                    is_2e = true
+                    cible_base = "TECS" -- La tôle de base
+                    if wp_ipcs == 1 then 
+                        tab_final = "TECS"
+                        is_lit = true
+                    elseif wp_ipcs == 0 then 
+                        tab_final = "TSCS"
+                        is_lit = true
+                    else
+                        tab_final = "TECS" 
+                        is_lit = false
+                    end
+                    
+                elseif tab_name_brut == "TSCS_TG" then
+                    is_2e = true
+                    cible_base = "TSCS_TG" -- La tôle de base restera TOUJOURS "TSCS_TG"
+                    local lit_tscs = (wp_ipcs == 0)
+                    local lit_tg = (wp_tg == 1)
+
+                    if lit_tscs and lit_tg then
+                        tab_final = "TSCS_TG_BOTH"
+                        is_lit = true
+                    elseif lit_tscs then
+                        tab_final = "TSCS_TG_TSCS"
+                        is_lit = true
+                    elseif lit_tg then
+                        tab_final = "TSCS_TG_TG"
+                        is_lit = true
+                    else
+                        tab_final = "TSCS_TG"
+                        is_lit = false
+                    end
+
+                elseif tab_name_brut == "TECS" then
+                    tab_final = "TECS"
+                    if wp_ipcs == 1 then is_lit = true end
+                    
+                elseif tab_name_brut == "TSCS" then
+                    tab_final = "TSCS"
+                    if wp_ipcs == 0 then is_lit = true end
+                    
+                elseif tab_name_brut == "TG" then
+                    if wp_tg == 1 then is_lit = true end
+                elseif tab_name_brut == "TD" then
+                    if wp_td == 1 then is_lit = true end
                 end
-                
-                return false
+
+                -- 2. SÉCURITÉ CARRÉ
+                if dist_red == 0 then is_lit = false end
+
+                -- 3. INVERSION PHYSIQUE (Le Swap Alsace)
+                if swap_tecs_tscs and not is_2e then
+
+                    if tab_final == "TECS" then tab_final = "TSCS"
+                    elseif tab_final == "TSCS" then tab_final = "TECS" end
+                    
+                    if cible_base == "TECS" then cible_base = "TSCS"
+                    elseif cible_base == "TSCS" then cible_base = "TECS" end
+                end
+
+                -- 4. RÉ-INJECTION DU FORMAT 2 ÉTATS
+                if is_2e then
+                    tab_final = tab_final .. "_2E"
+                    cible_base = cible_base .. "_2E"
+                end
+
+                return tab_final, is_lit, is_2e, cible_base
             end
 
             -- ==========================================
@@ -516,12 +555,23 @@ function data()
 
                     local final_cy = mast_local_y + c_y
                     local matrice_c1 = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(c_x*c-final_cy*s), oy+(c_x*s+final_cy*c), oz+base_z+c_z, 1 }
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. tab_name .. droite_suffix .. ".mdl", transf = matrice_c1 })
+
+                    -- On récupère la base de la cible en 4ème variable
+                    local tab_name_final, is_lit, is_2e, cible_base = get_tableau_state(tab_name)
+
+                    local cible_suffix = ""
+                    if is_2e then cible_suffix = droite_suffix end
+
+                    -- INSERTION CIBLE : On utilise 'cible_base' (La ferraille)
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. cible_base .. cible_suffix .. ".mdl", transf = matrice_c1 })
                     
-                    if is_tableau_allume(tab_name) then
-                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name .. "_Allume" .. droite_suffix .. ".mdl", transf = matrice_c1 })
+                    -- INSERTION FEUX
+                    if is_lit then
+                        -- Si allumé : On utilise le logiciel précis (La combinaison d'ampoules)
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name_final .. cible_suffix .. "_Allume.mdl", transf = matrice_c1 })
                     else
-                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name .. "_Eteint" .. droite_suffix .. ".mdl", transf = matrice_c1 })
+                        -- LA CORRECTION EST LÀ : Si éteint, on charge la base universelle éteinte !
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. cible_base .. cible_suffix .. "_Eteint.mdl", transf = matrice_c1 })
                     end
                 end
             end
@@ -531,6 +581,8 @@ function data()
             -- ==========================================
             local t2 = params.tab_indep_1 or 0
             local t2_is_drapeau = is_mat_drapeau
+            local s2_x, s2_y = 0.0, 0.0 
+            local has_s2 = false 
             
             if t2 > 0 then
                 local render_t2 = true
@@ -538,10 +590,9 @@ function data()
                 
                 if render_t2 then
                     local tab_name = tab_codes[t2+1]
-                    local base_mdl = tab_name
                     local sup_mdl = "Z_Sup_Normal"
                     
-                    local s_x = -1.2
+                    local s_x = -0.5
                     local s_y = t2_is_drapeau and 0.425 or 0
                     local s_z = 0
                     
@@ -549,11 +600,20 @@ function data()
                     local c_y = s_y - 0.025
                     local c_z = -3.25
                     
+
+                    if mast_idx == 0 or mast_idx == 2 or mast_idx == 4 or mast_idx == 6 then
+                        sup_mdl = "Z_Sup_Petit"
+                        c_z = -4.0
+                    end
+                    
                     if mast_idx == 8 then
                         sup_mdl = "Z_Sup_Nacelle"
-                        s_x = 0;  s_y = 1.9;  s_z = 0
+                        s_x = 0; s_y = 1.9;  s_z = 0
                         c_x = 0.12; c_y = -0.3; c_z = 3.205
                     end
+
+                    s2_x, s2_y = s_x, s_y
+                    has_s2 = true
 
                     if sup_mdl ~= "" then
                         local final_sy = mast_local_y + s_y
@@ -563,12 +623,23 @@ function data()
 
                     local final_cy = mast_local_y + c_y
                     local matrice_c2 = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(c_x*c-final_cy*s), oy+(c_x*s+final_cy*c), oz+base_z+c_z, 1 }
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. tab_name .. droite_suffix .. ".mdl", transf = matrice_c2 })
+
+                    -- On récupère la base de la cible en 4ème variable
+                    local tab_name_final, is_lit, is_2e, cible_base = get_tableau_state(tab_name)
+
+                    local cible_suffix = ""
+                    if is_2e then cible_suffix = droite_suffix end
+
+                    -- INSERTION CIBLE : On utilise 'cible_base' (La ferraille)
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. cible_base .. cible_suffix .. ".mdl", transf = matrice_c2 })
                     
-                    if is_tableau_allume(tab_name) then
-                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name .. "_Allume" .. droite_suffix .. ".mdl", transf = matrice_c2 })
+                    -- INSERTION FEUX
+                    if is_lit then
+                        -- Si allumé : On utilise le logiciel précis (La combinaison d'ampoules)
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name_final .. cible_suffix .. "_Allume.mdl", transf = matrice_c2 })
                     else
-                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name .. "_Eteint" .. droite_suffix .. ".mdl", transf = matrice_c2 })
+                        -- LA CORRECTION EST LÀ : Si éteint, on charge la base universelle éteinte !
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. cible_base .. cible_suffix .. "_Eteint.mdl", transf = matrice_c2 })
                     end
                 end
             end
@@ -578,17 +649,20 @@ function data()
             -- ==========================================
             local t3 = params.tab_indep_2 or 0
             local t3_is_drapeau = is_mat_drapeau
+            local s3_x, s3_y = 0.0, 0.0
+            local has_s3 = false
             
             if t3 > 0 then
                 local render_t3 = true
                 if t3 == 9 then render_t3 = false end
                 
+                if mast_idx == 0 or mast_idx == 2 or mast_idx == 4 or mast_idx == 6 then render_t3 = false end
+                
                 if render_t3 then
                     local tab_name = tab_codes[t3+1]
-                    local base_mdl = tab_name
                     local sup_mdl = "Z_Sup_Petit"
-
-                    local s_x = -3.5
+                    
+                    local s_x = -2.4
                     local s_y = t3_is_drapeau and 0.425 or 0
                     local s_z = 0
                     
@@ -600,15 +674,14 @@ function data()
                     local c_y = s_y - 0.025
                     local c_z = -4.0
                     
-                    local c_x = s_x - 1.5
-                    local c_y = s_y - 0.025
-                    local c_z = -4.0
-                    
                     if mast_idx == 8 then
                         sup_mdl = "Z_Sup_Nacelle" 
-                        s_x = 0;  s_y = 1.9;  s_z = 0.85
+                        s_x = 0; s_y = 1.9;  s_z = 0.85
                         c_x = 0.12; c_y = -0.3; c_z = 4.055
                     end
+
+                    s3_x, s3_y = s_x, s_y
+                    has_s3 = true
 
                     if sup_mdl ~= "" then
                         local final_sy = mast_local_y + s_y
@@ -618,15 +691,65 @@ function data()
 
                     local final_cy = mast_local_y + c_y
                     local matrice_c3 = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(c_x*c-final_cy*s), oy+(c_x*s+final_cy*c), oz+base_z+c_z, 1 }
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. tab_name .. droite_suffix .. ".mdl", transf = matrice_c3 })
                     
-                    if is_tableau_allume(tab_name) then
-                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name .. "_Allume" .. droite_suffix .. ".mdl", transf = matrice_c3 })
+                    -- On récupère la base de la cible en 4ème variable
+                    local tab_name_final, is_lit, is_2e, cible_base = get_tableau_state(tab_name)
+
+                    local cible_suffix = ""
+                    if is_2e then cible_suffix = droite_suffix end
+
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. cible_base .. cible_suffix .. ".mdl", transf = matrice_c3 })
+                    
+                    if is_lit then
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name_final .. cible_suffix .. "_Allume.mdl", transf = matrice_c3 })
                     else
-                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. tab_name .. "_Eteint" .. droite_suffix .. ".mdl", transf = matrice_c3 })
+                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. cible_base .. cible_suffix .. "_Eteint.mdl", transf = matrice_c3 })
                     end
                 end
             end
+
+            -- ==========================================
+            -- LE MOTEUR DE PLAQUE INTELLIGENT
+            -- ==========================================
+            local px = (current_mast.px or 0) + 0.0
+            local py = (current_mast.py or 0) + 0.0
+            
+            if is_droite and not is_nacelle then py = -py end
+            py = py + local_shift_y
+            
+            local pz = base_z + (current_mast.pz or 0)
+
+            if mast_idx ~= 8 and (has_s2 or has_s3) then
+                
+                if mast_idx == 1 or mast_idx == 3 or mast_idx == 5 or mast_idx == 7 then
+                    pz = pz + 1.6
+                    
+                elseif mast_idx == 0 or mast_idx == 2 then
+                    pz = pz + 0.9
+                    
+                elseif mast_idx == 4 or mast_idx == 6 then
+                    local teleport_offset_x = -1.50
+                    local teleport_offset_y = 0.0
+                    local teleport_offset_z = -0.8
+                    
+                    if has_s2 then
+                        px = s2_x + teleport_offset_x
+                        py = s2_y + local_shift_y + teleport_offset_y
+                        pz = pz + teleport_offset_z
+                    elseif has_s3 then
+                        px = s3_x + teleport_offset_x
+                        py = s3_y + local_shift_y + teleport_offset_y
+                        pz = pz + teleport_offset_z
+                    end
+                end
+            end
+
+            local matrice_plaque = {
+                c,  s, 0, 0,
+               -s,  c, 0, 0,
+                0,  0, 1, 0,
+                ox + (px * c - py * s), oy + (px * s + py * c), oz + pz, 1
+            }
             
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. final_mast_mdl, transf = matrice_mat })
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_Type_B.mdl", transf = matrice_feux })
