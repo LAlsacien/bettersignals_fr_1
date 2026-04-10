@@ -432,7 +432,7 @@ function data()
             
             local tab_codes = {
                 [2] = "TG", [3] = "TD", [4] = "TECS", [5] = "TSCS", 
-                [6] = "TECS_TSCS", [7] = "TGD", [8] = "TSCS_TG", 
+                [6] = "TECS_TSCS", [7] = "TG_TD", [8] = "TSCS_TG", 
                 [9] = "IMP", [10] = "BLJH"
             }
             
@@ -448,11 +448,13 @@ function data()
                 local wp_ipcs = params.paramsOverride and tonumber(params.paramsOverride.ipcs)
                 local wp_tg = params.paramsOverride and tonumber(params.paramsOverride.tableau_g) or 0
                 local wp_td = params.paramsOverride and tonumber(params.paramsOverride.tableau_d) or 0
+                local wp_imp = params.paramsOverride and tonumber(params.paramsOverride.tableau_imp) or 0
+                local wp_bljh = params.paramsOverride and tonumber(params.paramsOverride.bljh) or 0
 
                 -- 1. RÉSOLUTION LOGIQUE
                 if tab_name_brut == "TECS_TSCS" then
                     is_2e = true
-                    cible_base = "TECS" -- La tôle de base
+                    cible_base = "TECS"
                     if wp_ipcs == 1 then 
                         tab_final = "TECS"
                         is_lit = true
@@ -463,10 +465,15 @@ function data()
                         tab_final = "TECS" 
                         is_lit = false
                     end
+
+                elseif tab_name_brut == "IMP" then
+                    tab_final = "IMP"
+                    cible_base = "IMP"
+                    if wp_imp == 1 then is_lit = true end
                     
                 elseif tab_name_brut == "TSCS_TG" then
                     is_2e = true
-                    cible_base = "TSCS_TG" -- La tôle de base restera TOUJOURS "TSCS_TG"
+                    cible_base = "TSCS_TG"
                     local lit_tscs = (wp_ipcs == 0)
                     local lit_tg = (wp_tg == 1)
 
@@ -481,6 +488,28 @@ function data()
                         is_lit = true
                     else
                         tab_final = "TSCS_TG"
+                        is_lit = false
+                    end
+                
+                elseif tab_name_brut == "BLJH" then
+                    tab_final = "BLJH"
+                    cible_base = "BLJH"
+                    if wp_bljh == 1 then is_lit = true end
+                
+                elseif tab_name_brut == "TG_TD" then
+                    is_2e = true
+                    
+                    if wp_tg == 1 then
+                        tab_final = "TG_TD_TG"
+                        cible_base = "TG_TD_TG"
+                        is_lit = true
+                    elseif wp_td == 1 then
+                        tab_final = "TG_TD_TD"
+                        cible_base = "TG_TD_TD"
+                        is_lit = true
+                    else
+                        tab_final = "TG_TD" 
+                        cible_base = "TG_TD"
                         is_lit = false
                     end
 
@@ -562,7 +591,6 @@ function data()
                     local cible_suffix = ""
                     if is_2e then cible_suffix = droite_suffix end
 
-                    -- INSERTION CIBLE : On utilise 'cible_base' (La ferraille)
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. cible_base .. cible_suffix .. ".mdl", transf = matrice_c1 })
                     
                     -- INSERTION FEUX
@@ -586,7 +614,8 @@ function data()
             
             if t2 > 0 then
                 local render_t2 = true
-                if t2 == 9 then render_t2 = false end -- Pas de BLJH
+                if t2 == 9 and mast_idx ~= 8 then render_t2 = false end
+                if t2 == 8 and mast_idx == 8 then render_t2 = false end
                 
                 if render_t2 then
                     local tab_name = tab_codes[t2+1]
@@ -654,7 +683,8 @@ function data()
             
             if t3 > 0 then
                 local render_t3 = true
-                if t3 == 9 then render_t3 = false end
+                if t3 == 9 and mast_idx ~= 8 then render_t3 = false end
+                if t3 == 8 and mast_idx == 8 then render_t3 = false end
                 
                 if mast_idx == 0 or mast_idx == 2 or mast_idx == 4 or mast_idx == 6 then render_t3 = false end
                 
