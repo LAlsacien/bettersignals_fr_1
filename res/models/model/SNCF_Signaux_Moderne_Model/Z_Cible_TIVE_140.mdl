@@ -1,0 +1,94 @@
+function data()
+return {
+	boundingInfo = {
+		bbMax = { 3.6000542640686, 2.8789844512939, 5.9610447883606, },
+		bbMin = { 2.4462807178497, 1.9210156202316, 2.941633939743, },
+	},
+	collider = {
+		params = {
+			halfExtents = { 0.57688677310944, 0.47898441553116, 1.5097054243088, },
+		},
+		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+		type = "BOX",
+	},
+	lods = {
+-------------------------------------------------- LOD0 --------------------------------------------------------------------------
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne_2.mtl", "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
+						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Cible_TIV_Mobile_140_lod0.msh",
+						name = "SNCF_Cible_TIV_Mobile_140",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+						},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false,
+			visibleFrom = 0,
+			visibleTo = 85,
+		},
+-------------------------------------------------- LOD1 --------------------------------------------------------------------------
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl", "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
+						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Cible_TIV_3E_lod1.msh",
+						name = "SNCF_Cible_TIV_3E_lod1",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+						},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false,
+			visibleFrom = 85,
+			visibleTo = 150,
+		},
+-------------------------------------------------- LOD2 --------------------------------------------------------------------------
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl", "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
+						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Cible_TIV_3E_lod1.msh",
+						name = "SNCF_Cible_TIV_3E_lod1",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+						},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false,
+			visibleFrom = 150,
+			visibleTo = 250,
+		},
+	},
+	metadata = {
+		availability = {
+			yearFrom = 2005,
+			yearTo = 0,
+		},
+		category = {
+			categories = { "CC_SNCF_Signaux_Moderne_TIV_Gauche", },
+		},
+		cost = {
+			price = 7000,
+			priceScale = 1,
+		},
+		description = {
+			description = _("État de fermeture : Éteint                                                      État d'ouverture : TIV de Rappel 140                                                            Mats : Lourd                                                                  Position : Gauche"),
+			name = _("Signalisation Type TIV Mobile"),
+		},
+		signal = {
+			soundevent = "",
+			type = "WAYPOINT",
+			upright = true,
+		},
+	},
+	version = 1,
+}
+end
