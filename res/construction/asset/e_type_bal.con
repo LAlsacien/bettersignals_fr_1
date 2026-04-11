@@ -33,7 +33,7 @@ function data()
         categories = { "better_signals" },
         skipCollision = true,
         autoRemovable = false,
-        order = 11111,
+        order = 11114,
         params = {
             {
             key = "opt_jcli",

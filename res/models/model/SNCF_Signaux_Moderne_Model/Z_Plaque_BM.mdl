@@ -1,0 +1,36 @@
+function data()
+return {
+	boundingInfo = {
+		bbMax = { 3.7257657051086, 2.5449998378754, 2.3248590707779, },
+		bbMin = { 3.6636826992035, 2.2550001144409, 2.1960577249527, },
+	},
+	collider = {
+		params = {
+			halfExtents = { 0.31905043125153, 0.49106401205063, 2.7268416881561, },
+		},
+		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+		type = "BOX",
+	},
+	lods = {
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl", "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
+						mesh = "SNCF_Asset_Mesh/SNCF_PlaqueBM_lod0.msh",
+						name = "SNCF_PlaqueBM",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false,
+			visibleFrom = 0,
+			visibleTo = 150,
+		},
+	},
+	metadata = { },
+	version = 1,
+}
+end

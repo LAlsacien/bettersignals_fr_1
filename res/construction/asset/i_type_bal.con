@@ -27,13 +27,14 @@ function data()
         description = {
             name = _("Type I - LED"),
             description = _("Signalisation ferroviaire SNCF moderne de type I"),
+            icon = ""
         },
         availability = { yearFrom = 2005 },
         skipOnInit = true,
         categories = { "better_signals" },
         skipCollision = true,
         autoRemovable = false,
-        order = 11111,
+        order = 11118,
         params = {
             {
                 key = "opt_pos",

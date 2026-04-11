@@ -20,9 +20,9 @@ function data()
             tags = { "europe", "signal", "better_signals" },
             dependencies = {
                 "3467585867_1",
-                "3689166005_1",
+                "better_signals_1",
             },
-            requiredMods = { { modId = "3689166005_1" } },
+            requiredMods = { { modId = "better_signals_1" } },
         },
 
         runFn = function(settings, modParams)
