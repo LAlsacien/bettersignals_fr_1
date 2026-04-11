@@ -968,7 +968,7 @@ function data()
             }
             
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. final_mast_mdl, transf = matrice_mat })
-            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_Type_F.mdl", transf = matrice_feux })
+            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_Type_H.mdl", transf = matrice_feux })
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.plaque_mdl, transf = matrice_plaque_base })
             if cant_mdl ~= "" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. cant_mdl, transf = matrice_plaque_cant })

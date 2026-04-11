@@ -250,7 +250,7 @@ function data()
                 end
             end
             
-            local cible_mdl = "Z_Cible_Type_B.mdl" 
+            local cible_mdl = "Z_Cible_Type_C.mdl" 
             local opt_spec = params.opt_cible_spec or 0
             
             local hide_vert = false
