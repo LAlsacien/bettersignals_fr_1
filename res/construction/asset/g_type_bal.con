@@ -664,7 +664,6 @@ function data()
                     local final_cy = mast_local_y + c_y
                     local matrice_c1 = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(c_x*c-final_cy*s), oy+(c_x*s+final_cy*c), oz+base_z+c_z, 1 }
 
-                    -- On récupère la base de la cible en 4ème variable
                     local tab_name_final, is_lit, is_2e, cible_base = get_tableau_state(tab_name)
 
                     local cible_suffix = ""
@@ -702,7 +701,8 @@ function data()
                     local sup_mdl = "Z_Sup_Normal"
                     
                     local s_x = -0.5
-                    local s_y = t2_is_drapeau and 0.425 or 0
+                    local decalage_y = is_droite and -0.425 or 0.425
+                    local s_y = t2_is_drapeau and decalage_y or 0
                     local s_z = 0
                     
                     local c_x = s_x - 1.5
@@ -774,7 +774,8 @@ function data()
                     local sup_mdl = "Z_Sup_Petit"
                     
                     local s_x = -2.4
-                    local s_y = t3_is_drapeau and 0.425 or 0
+                    local decalage_y = is_droite and -0.425 or 0.425
+                    local s_y = t3_is_drapeau and decalage_y or 0
                     local s_z = 0
                     
                     if t2 == 0 and mast_idx ~= 8 then

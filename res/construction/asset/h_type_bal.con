@@ -664,10 +664,8 @@ function data()
                     if wp_td == 1 then is_lit = true end
                 end
 
-                -- 2. SÉCURITÉ CARRÉ
                 if dist_red == 0 then is_lit = false end
 
-                -- 3. INVERSION PHYSIQUE (Le Swap Alsace)
                 if swap_tecs_tscs and not is_2e then
 
                     if tab_final == "TECS" then tab_final = "TSCS"
@@ -677,7 +675,6 @@ function data()
                     elseif cible_base == "TSCS" then cible_base = "TECS" end
                 end
 
-                -- 4. RÉ-INJECTION DU FORMAT 2 ÉTATS
                 if is_2e then
                     tab_final = tab_final .. "_2E"
                     cible_base = cible_base .. "_2E"
@@ -760,7 +757,8 @@ function data()
                     local sup_mdl = "Z_Sup_Normal"
                     
                     local s_x = -0.5
-                    local s_y = t2_is_drapeau and 0.425 or 0
+                    local decalage_y = is_droite and -0.425 or 0.425
+                    local s_y = t2_is_drapeau and decalage_y or 0
                     local s_z = 0
                     
                     local c_x = s_x - 1.5
@@ -791,13 +789,11 @@ function data()
                     local final_cy = mast_local_y + c_y
                     local matrice_c2 = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(c_x*c-final_cy*s), oy+(c_x*s+final_cy*c), oz+base_z+c_z, 1 }
 
-                    -- On récupère la base de la cible en 4ème variable
                     local tab_name_final, is_lit, is_2e, cible_base = get_tableau_state(tab_name)
 
                     local cible_suffix = ""
                     if is_2e then cible_suffix = droite_suffix end
 
-                    -- INSERTION CIBLE : On utilise 'cible_base' (La ferraille)
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. cible_base .. cible_suffix .. ".mdl", transf = matrice_c2 })
                     
                      if is_lit then
@@ -832,7 +828,8 @@ function data()
                     local sup_mdl = "Z_Sup_Petit"
                     
                     local s_x = -2.4
-                    local s_y = t3_is_drapeau and 0.425 or 0
+                    local decalage_y = is_droite and -0.425 or 0.425
+                    local s_y = t3_is_drapeau and decalage_y or 0
                     local s_z = 0
                     
                     if t2 == 0 and mast_idx ~= 8 then

@@ -708,7 +708,8 @@ function data()
                     local sup_mdl = "Z_Sup_Normal"
                     
                     local s_x = -0.5
-                    local s_y = t2_is_drapeau and 0.425 or 0
+                    local decalage_y = is_droite and -0.425 or 0.425
+                    local s_y = t2_is_drapeau and decalage_y or 0
                     local s_z = 0
                     
                     local c_x = s_x - 1.5
@@ -780,7 +781,8 @@ function data()
                     local sup_mdl = "Z_Sup_Petit"
                     
                     local s_x = -2.4
-                    local s_y = t3_is_drapeau and 0.425 or 0
+                    local decalage_y = is_droite and -0.425 or 0.425
+                    local s_y = t3_is_drapeau and decalage_y or 0
                     local s_z = 0
                     
                     if t2 == 0 and mast_idx ~= 8 then
