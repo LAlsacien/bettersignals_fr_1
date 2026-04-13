@@ -492,7 +492,7 @@ function data()
             -- === LE MOTEUR D'AFFICHAGE DYNAMIQUE ===
             local function get_tableau_state(tab_name_brut)
                 local tab_final = tab_name_brut
-                local cible_base = tab_name_brut -- NOUVEAU : Nom strict pour la tôle
+                local cible_base = tab_name_brut
                 local is_lit = false
                 local is_2e = false 
 
@@ -517,6 +517,7 @@ function data()
                         tab_final = "TECS" 
                         is_lit = false
                     end
+                    cible_base = tab_final
 
                 elseif tab_name_brut == "IMP" then
                     tab_final = "IMP"
@@ -596,7 +597,6 @@ function data()
 
                 -- 3. INVERSION PHYSIQUE (Le Swap Alsace)
                 if swap_tecs_tscs and not is_2e then
-
                     if tab_final == "TECS" then tab_final = "TSCS"
                     elseif tab_final == "TSCS" then tab_final = "TECS" end
                     
@@ -604,7 +604,6 @@ function data()
                     elseif cible_base == "TSCS" then cible_base = "TECS" end
                 end
 
-                -- 4. RÉ-INJECTION DU FORMAT 2 ÉTATS
                 if is_2e then
                     tab_final = tab_final .. "_2E"
                     cible_base = cible_base .. "_2E"
@@ -649,7 +648,6 @@ function data()
                     local final_cy = mast_local_y + c_y
                     local matrice_c1 = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(c_x*c-final_cy*s), oy+(c_x*s+final_cy*c), oz+base_z+c_z, 1 }
 
-                    -- On récupère la base de la cible en 4ème variable
                     local tab_name_final, is_lit, is_2e, cible_base = get_tableau_state(tab_name)
 
                     local cible_suffix = ""
@@ -724,7 +722,6 @@ function data()
                     local cible_suffix = ""
                     if is_2e then cible_suffix = droite_suffix end
 
-                    -- INSERTION CIBLE : On utilise 'cible_base' (La ferraille)
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. cible_base .. cible_suffix .. ".mdl", transf = matrice_c2 })
                     
                      if is_lit then

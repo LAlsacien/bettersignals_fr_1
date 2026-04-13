@@ -558,6 +558,7 @@ function data()
                         tab_final = "TECS" 
                         is_lit = false
                     end
+                    cible_base = tab_final
 
                 elseif tab_name_brut == "IMP" then
                     tab_final = "IMP"

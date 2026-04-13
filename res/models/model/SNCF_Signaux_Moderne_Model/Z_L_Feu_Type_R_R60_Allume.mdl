@@ -1,0 +1,132 @@
+function data()
+return {
+	boundingInfo = {
+		bbMax = { 5.1191720962524, 2.9529583454132, 4.1497240066528, },
+		bbMin = { 3.1394908428192, 1.8529582023621, -1.3000025749207, },
+	},
+	collider = {
+		params = { halfExtents = { 0.98984062671661, 0.55000007152557, 2.7248632907867, }, },
+		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+		type = "BOX",
+	},
+	lods = {
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_Jaune_LED.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Feu_Jaune_Allume_lod0.msh",
+                        animations = {
+                            forever = {
+                                type = "KEYFRAME",
+                                params = {
+                                    origin = { 0, 0, 0, },
+                                    keyframes = {
+                                        { time = 0, rot = { 0, 0, 0 }, transl = { 0, 0, 0 } },
+                                        { time = 499, rot = { 0, 0, 0 }, transl = { 0, 0, 0 } },
+                                        { time = 500, rot = { 0, 0, 0 }, transl = { 0.05, 0, 0 } },
+                                        { time = 999, rot = { 0, 0, 0 }, transl = { 0.05, 0, 0 } },
+                                        { time = 1000, rot = { 0, 0, 0 }, transl = { 0, 0, 0 } },
+                                    }
+                                }
+                            }
+                        },
+						name = "SNCF_Feu_Jaune_Allume_Droite",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -0.05, 0, 0, 1, },
+					},
+                    {
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_Jaune_LED.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Feu_Jaune_Allume_lod0.msh",
+                        animations = {
+                            forever = {
+                                type = "KEYFRAME",
+                                params = {
+                                    origin = { 0, 0, 0, },
+                                    keyframes = {
+                                        { time = 0, rot = { 0, 0, 0 }, transl = { 0, 0, 0 } },
+                                        { time = 499, rot = { 0, 0, 0 }, transl = { 0, 0, 0 } },
+                                        { time = 500, rot = { 0, 0, 0 }, transl = { 0.05, 0, 0 } },
+                                        { time = 999, rot = { 0, 0, 0 }, transl = { 0.05, 0, 0 } },
+                                        { time = 1000, rot = { 0, 0, 0 }, transl = { 0, 0, 0 } },
+                                    }
+                                }
+                            }
+                        },
+						name = "SNCF_Feu_Jaune_Allume_Gauche",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -0.05, -0.6, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false,
+			visibleFrom = 0,
+			visibleTo = 85,
+		},
+		{
+			node = {
+				children = {
+                    -- FEU DU BAS LOD 1
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_Jaune_LED.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Feu_Jaune_Allume_lod1.msh",
+                        animations = {
+                            forever = {
+                                type = "KEYFRAME",
+                                params = {
+                                    origin = { 0, 0, 0, },
+                                    keyframes = {
+                                        { time = 0, rot = { 0, 0, 0 }, transl = { 0, 0, 0 } },
+                                        { time = 499, rot = { 0, 0, 0 }, transl = { 0, 0, 0 } },
+                                        { time = 500, rot = { 0, 0, 0 }, transl = { 0.05, 0, 0 } },
+                                        { time = 999, rot = { 0, 0, 0 }, transl = { 0.05, 0, 0 } },
+                                        { time = 1000, rot = { 0, 0, 0 }, transl = { 0, 0, 0 } },
+                                    }
+                                }
+                            }
+                        },
+						name = "SNCF_Feu_Jaune_Allume_Droite",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+                    -- FEU DU HAUT LOD 1
+                    {
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_Jaune_LED.mtl", },
+						mesh = "SNCF_Signaux_Moderne_Mesh/SNCF_Feu_Jaune_Allume_lod1.msh",
+                        animations = {
+                            forever = {
+                                type = "KEYFRAME",
+                                params = {
+                                    origin = { 0, 0, 0, },
+                                    keyframes = {
+                                        { time = 0, rot = { 0, 0, 0 }, transl = { 0, 0, 0 } },
+                                        { time = 499, rot = { 0, 0, 0 }, transl = { 0, 0, 0 } },
+                                        { time = 500, rot = { 0, 0, 0 }, transl = { 0.05, 0, 0 } },
+                                        { time = 999, rot = { 0, 0, 0 }, transl = { 0.05, 0, 0 } },
+                                        { time = 1000, rot = { 0, 0, 0 }, transl = { 0, 0, 0 } },
+                                    }
+                                }
+                            }
+                        },
+						name = "SNCF_Feu_Jaune_Allume_Gauche",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0.40, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false,
+			visibleFrom = 85,
+			visibleTo = 150,
+		},
+	},
+	metadata = {
+		availability = { yearFrom = 2005, yearTo = 0, },
+		cost = { price = 0, priceScale = 1, },
+		description = {
+			description = _("Lentilles Jaunes R60 Synchronisées"),
+			name = _("Lentilles R60 Sync"),
+		},
+	},
+	version = 1,
+}
+end

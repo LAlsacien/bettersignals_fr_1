@@ -61,6 +61,10 @@ function data()
                 type = "main",
                 isAnimated = false,
             }
+            signals.signals['r_type_bal'] = {
+                type = "pre",
+                isAnimated = false,
+            }
         end,
     }
 end
