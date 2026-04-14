@@ -1,0 +1,47 @@
+function data()
+return {
+	boundingInfo = {
+		bbMax = { 5.7485036849976, 3.0344176292419, 6.4160490036011, },
+		bbMin = { 3.1394908428192, 1.8529582023621, -1.3000025749207, },
+	},
+	collider = {
+		params = { halfExtents = { 0.98984062671661, 0.55000007152557, 2.7248632907867, }, },
+		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+		type = "BOX",
+	},
+	lods = {
+		{ -- LOD 0
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne_3.mtl", },
+						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Support_TIVD_Leger_Drapeau_Moderne_lod0.msh",
+						name = "SNCF_Support_TIVD_Leger_Drapeau_Moderne",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false, visibleFrom = 0, visibleTo = 85,
+		},
+		{ -- LOD 1
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne_3.mtl", },
+						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Support_TIVD_Leger_Haut_Drapeau_Moderne_lod1.msh",
+						name = "SNCF_Support_TIVD_Leger_Haut_Drapeau_Moderne",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false, visibleFrom = 85, visibleTo = 150,
+		},
+	},
+	metadata = { },
+	version = 1,
+}
+end
