@@ -138,15 +138,16 @@ function data()
                 has_disque = true
             end
 
-            local force_ralent = 0
-
             local force_disque = (params.paramsOverride and tonumber(params.paramsOverride.disque) == 1)
 
+            local force_ralent = 0
+            local wp_rr = 0
+
             if params.following_signal and params.following_signal.paramsOverride and params.following_signal.paramsOverride.rr then
-                force_ralent = tonumber(params.following_signal.paramsOverride.rr)
+                wp_rr = tonumber(params.following_signal.paramsOverride.rr)
             end
 
-            if force_ralent == 0 and params.following_signal and params.following_signal.signal_speed then
+            if params.following_signal and params.following_signal.signal_speed then
                 local next_speed = params.following_signal.signal_speed
                 local current_speed = params.signal_speed or 999
                 
@@ -157,6 +158,18 @@ function data()
                         force_ralent = 2
                     end
                 end
+            end
+
+            if wp_rr == 1 then 
+                force_ralent = 1
+            elseif wp_rr == 2 then 
+                force_ralent = 2
+            elseif wp_rr == 3 and force_ralent == 1 then 
+                force_ralent = 0
+            elseif wp_rr == 4 and force_ralent == 2 then 
+                force_ralent = 0
+            elseif wp_rr == 5 then 
+                force_ralent = 0
             end
 
             local dist_red = 1

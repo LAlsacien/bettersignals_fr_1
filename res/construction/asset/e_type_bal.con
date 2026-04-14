@@ -107,22 +107,20 @@ function data()
             if params.opt_jcli and tonumber(params.opt_jcli) == 1 then has_jcli = true end
 
            -- 2. LECTURE DES WAYPOINTS & SYSTEME AUTO
-            local force_ralent = 0
             local force_rcli = 0
-            local inhibe_ralent = 0
             
             if params.paramsOverride and params.paramsOverride.rcli then 
                 force_rcli = tonumber(params.paramsOverride.rcli) 
             end
-            if params.paramsOverride and params.paramsOverride.ir then
-                inhibe_ralent = tonumber(params.paramsOverride.ir)
-            end
+            
+            local force_ralent = 0
+            local wp_rr = 0
 
             if params.following_signal and params.following_signal.paramsOverride and params.following_signal.paramsOverride.rr then
-                force_ralent = tonumber(params.following_signal.paramsOverride.rr)
+                wp_rr = tonumber(params.following_signal.paramsOverride.rr)
             end
 
-            if force_ralent == 0 and params.following_signal and params.following_signal.signal_speed then
+            if params.following_signal and params.following_signal.signal_speed then
                 local next_speed = params.following_signal.signal_speed
                 local current_speed = params.signal_speed or 999
                 
@@ -135,12 +133,16 @@ function data()
                 end
             end
 
-            if inhibe_ralent == 1 and force_ralent == 1 then
-                force_ralent = 0 -- Annule le R30
-            elseif inhibe_ralent == 2 and force_ralent == 2 then
-                force_ralent = 0 -- Annule le R60
-            elseif inhibe_ralent == 3 then
-                force_ralent = 0 -- Annule tout
+            if wp_rr == 1 then 
+                force_ralent = 1
+            elseif wp_rr == 2 then 
+                force_ralent = 2
+            elseif wp_rr == 3 and force_ralent == 1 then 
+                force_ralent = 0
+            elseif wp_rr == 4 and force_ralent == 2 then 
+                force_ralent = 0
+            elseif wp_rr == 5 then 
+                force_ralent = 0
             end
 
             -- 3. GESTION DES CANTONS
