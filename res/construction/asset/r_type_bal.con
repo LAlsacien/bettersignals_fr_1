@@ -27,7 +27,7 @@ function data()
         description = {
             name = _("Type R - LED"),
             description = _("Signalisation ferroviaire SNCF moderne de type R"),
-            icon = ""
+            icon = "ui/construction/assets/r_type_bal.tga"
         },
         availability = { yearFrom = 2005 },
         skipOnInit = true,

@@ -26,7 +26,8 @@ function data()
         type = "ASSET_TRACK",
         description = {
             name = _("Type A - LED"),
-            description = _("Signalisation ferroviaire SNCF moderne de type A - Block Automatique Lumineux"),
+            description = _("Signalisation ferroviaire SNCF moderne de type A"),
+            icon = "ui/construction/assets/a_type_bal.tga"
         },
         availability = { yearFrom = 2005 },
         skipOnInit = true,
