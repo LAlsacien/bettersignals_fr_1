@@ -254,7 +254,11 @@ function data()
                 elseif tab_name_brut == "TSCS_TG" then is_2e = true; cible_base = "TSCS_TG"; local l_tscs, l_tg = (wp.ipcs == 0), (wp.tableau_g == 1); if l_tscs and l_tg then tab_final, is_lit = "TSCS_TG_BOTH", true elseif l_tscs then tab_final, is_lit = "TSCS_TG_TSCS", true elseif l_tg then tab_final, is_lit = "TSCS_TG_TG", true else tab_final, is_lit = "TSCS_TG", false end
                 elseif tab_name_brut == "BLJH" then is_lit = (wp.bljh == 1); cible_base = "BLJH"
                 elseif tab_name_brut == "TG_TD" then is_2e = true; if wp.tableau_g == 1 then tab_final, cible_base, is_lit = "TG_TD_TG", "TG_TD_TG", true elseif wp.tableau_d == 1 then tab_final, cible_base, is_lit = "TG_TD_TD", "TG_TD_TD", true else tab_final, cible_base, is_lit = "TG_TD", "TG_TD", false end
-                elseif tab_name_brut == "TIVE" then local cases = is_tiv_3c and "3C" or "2C"; cible_base = "TIVE_" .. vit_tiv_val; tab_final = (wp.tivm and wp.tivm > 0) and cible_base or "TIVE_Ouvert_" .. cases; is_lit = true
+                elseif tab_name_brut == "TIVE" then 
+                    local cases = is_tiv_3c and "3C" or "2C"
+                    cible_base = "TIVE_" .. vit_tiv_val
+                    tab_final = (wp.tivm == 1) and cible_base or ("TIVE_Ouvert_" .. cases)
+                    is_lit = true
                 elseif tab_name_brut == "TECS" then is_lit = (wp.ipcs == 1)
                 elseif tab_name_brut == "TSCS" then is_lit = (wp.ipcs == 0)
                 elseif tab_name_brut == "TG" then is_lit = (wp.tableau_g == 1)
@@ -290,7 +294,7 @@ function data()
                 end
             end
 
-            -- 5b. Slots de Tableaux (Correction "Support Petit")
+            -- 5b. Slots de Tableaux
             local slots = { {p="tab_mat", s=1}, {p="tab_indep_1", s=2}, {p="tab_indep_2", s=3} }
             local has_s2, has_s3, s2x, s2y, s3x, s3y = false, false, 0, 0, 0, 0
             for _, slot in ipairs(slots) do
@@ -310,18 +314,11 @@ function data()
                             if slot.s==3 and params.tab_indep_1==0 and mast_idx~=8 then s_x = -1.2 end
                             
                             c_z = (mast_idx%2==0 and mast_idx<8) and -4.0 or -3.25
-                            -- Sanctuarisation Slot 3 Version Haute
-                            if slot.s==3 and mast_idx%2==1 and mast_idx<8 then 
-                                sup_mdl = "Z_Sup_Petit" 
-                                c_z = -4.0 
-                            end
+                            if slot.s==3 and mast_idx%2==1 and mast_idx<8 then sup_mdl = "Z_Sup_Petit"; c_z = -4.0 end
 
                             if mast_idx==8 then sup_mdl, s_x, s_y, s_z, c_x, c_y, c_z = "Z_Sup_Nacelle", 0, 1.9, (slot.s==3 and 0.85 or 0), 0, -0.325, (slot.s==3 and 4.055 or 3.205) end
                             if slot.s==2 then has_s2, s2x, s2y = true, s_x, s_y else has_s3, s3x, s3y = true, s_x, s_y end
-                            
-                            if mast_idx~=8 then 
-                                c_x, c_y = s_x - 1.5, s_y - 0.025
-                            end
+                            if mast_idx~=8 then c_x, c_y = s_x - 1.5, s_y - 0.025 end
                         end
                         local f_sy, f_cy = mast_local_y + s_y, mast_local_y + c_y
                         table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. sup_mdl .. ".mdl", transf = {c,s,0,0,-s,c,0,0,0,0,1,0,ox+(s_x*c-f_sy*s),oy+(s_x*s+f_sy*c),oz+base_z+s_z,1} })
@@ -329,12 +326,14 @@ function data()
                         local m_tab = {c,s,0,0,-s,c,0,0,0,0,1,0,ox+(c_x*c-f_cy*s),oy+(c_x*s+f_cy*c),oz+base_z+c_z,1}
                         table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. c_b .. (t_2e and droite_suffix or "") .. ".mdl", transf = m_tab })
                         table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. (t_lit and t_fn or c_b) .. (t_2e and droite_suffix or "") .. (t_lit and "_Allume" or "_Eteint") .. ".mdl", transf = m_tab })
-                        if t_lit and string.find(t_fn, "TIVE_Ouvert") then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. c_b .. (t_2e and droite_suffix or "") .. "_Eteint.mdl", transf = m_tab }) end
+                        if t_lit and string.find(t_fn, "TIVE_Ouvert") then
+                            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. c_b .. (t_2e and droite_suffix or "") .. "_Eteint.mdl", transf = m_tab })
+                        end
                     end
                 end
             end
 
-            -- 5c. Plaque Intelligent
+            -- 5c. Plaque
             local px, py, pz = current_mast.px or 0, (is_droite and not is_nacelle and -(current_mast.py or 0) or (current_mast.py or 0)) + local_shift_y, base_z + (current_mast.pz or 0)
             if mast_idx ~= 8 and (has_s2 or has_s3) then
                 if mast_idx%2 == 1 then pz = pz + 1.6 elseif mast_idx < 4 then pz = pz + 0.9
@@ -356,7 +355,10 @@ function data()
                 if f_mast then table.insert(result.models, { id = "SNCF_Asset_Model/" .. f_prefix .. f_pos .. f_mast .. ".mdl", transf = {c,s,0,0,-s,c,0,0,0,0,1,0,ox,oy,oz,1} }) end
             end
 
-            -- 5e. Feux principaux
+            -- 5e. Aspects principaux (Harmonisation Inhibition)
+            local inhibe_vert = false
+            local inhibe_jcli = false
+
             if display == "CARRE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux_haut }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Eteint.mdl", transf = matrice_oeilleton })
                 if not hide_vert then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux }) end
@@ -365,10 +367,11 @@ function data()
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Cli_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton })
                 if not hide_vert then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux }) end
             elseif display == "VERT" then
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_" .. (inhibe_vert and "Eteint" or "Allume") .. ".mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
                 if not hide_jaune then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux }) end
             elseif display == "JAUNE_CLI" then
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Cli_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
+                local cli_mdl = inhibe_jcli and "Z_L_Feu_Jaune_Eteint.mdl" or "Z_L_Feu_Jaune_Cli_Allume.mdl"
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. cli_mdl, transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
                 if not hide_vert then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux }) end
             elseif display == "JAUNE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })

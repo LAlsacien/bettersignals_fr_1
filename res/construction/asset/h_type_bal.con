@@ -135,7 +135,7 @@ function data()
             local result = { models = {}, groundFaces = {}, terrainAlignmentLists = {} }
             
             -- =========================================================================
-            -- 1. INITIALISATION
+            -- 1. INITIALISATION ET PARAMÈTRES UI
             -- =========================================================================
             local has_jcli = (params.opt_jcli == 1)
             local is_droite = (params.opt_pos == 1)
@@ -143,6 +143,11 @@ function data()
             local swap_tecs_tscs = is_circ_droite
             local mast_idx = params.mast_type or 0
             
+            local tiv_speeds = { "30", "40", "50", "60", "70", "80", "90", "100", "110", "120", "130", "140", "150", "160" }
+            local vit_tiv_idx = params.opt_vit_tiv or 0
+            local vit_tiv_val = tiv_speeds[vit_tiv_idx + 1]
+            local is_tiv_3c = (vit_tiv_idx >= 7)
+
             local ox = (params.offset_x or 10) - 10
             local oy = (params.offset_y or 10) - 10
             local oz = (params.offset_z or 10) - 10
@@ -204,6 +209,7 @@ function data()
 
             if display == "CARRE" or display == "ROUGE_CLI" then rr_state = 0; force_ralent = 0 end
             if display == "JAUNE" then force_ralent = 0 end
+            if rr_state > 0 and force_ralent > 0 then display = "JAUNE"; force_ralent = 0 end
 
             -- =========================================================================
             -- 3. MOTEUR GÉOMÉTRIQUE
@@ -272,7 +278,11 @@ function data()
                 elseif tab_name_brut == "TSCS_TG" then is_2e = true; cible_base = "TSCS_TG"; local l_tscs, l_tg = (wp.ipcs == 0), (wp.tableau_g == 1); if l_tscs and l_tg then tab_final, is_lit = "TSCS_TG_BOTH", true elseif l_tscs then tab_final, is_lit = "TSCS_TG_TSCS", true elseif l_tg then tab_final, is_lit = "TSCS_TG_TG", true else tab_final, is_lit = "TSCS_TG", false end
                 elseif tab_name_brut == "BLJH" then is_lit = (wp.bljh == 1); cible_base = "BLJH"
                 elseif tab_name_brut == "TG_TD" then is_2e = true; if wp.tableau_g == 1 then tab_final, cible_base, is_lit = "TG_TD_TG", "TG_TD_TG", true elseif wp.tableau_d == 1 then tab_final, cible_base, is_lit = "TG_TD_TD", "TG_TD_TD", true else tab_final, cible_base, is_lit = "TG_TD", "TG_TD", false end
-                elseif tab_name_brut == "TIVE" then local cases = is_tiv_3c and "3C" or "2C"; cible_base = "TIVE_" .. vit_tiv_val; tab_final = (wp.tivm and wp.tivm > 0) and cible_base or "TIVE_Ouvert_" .. cases; is_lit = true
+                elseif tab_name_brut == "TIVE" then 
+                    local cases = is_tiv_3c and "3C" or "2C"
+                    cible_base = "TIVE_" .. vit_tiv_val
+                    tab_final = (wp.tivm == 1) and cible_base or ("TIVE_Ouvert_" .. cases)
+                    is_lit = true
                 elseif tab_name_brut == "TECS" then is_lit = (wp.ipcs == 1)
                 elseif tab_name_brut == "TSCS" then is_lit = (wp.ipcs == 0)
                 elseif tab_name_brut == "TG" then is_lit = (wp.tableau_g == 1)
@@ -337,6 +347,9 @@ function data()
                         local m_tab = {c,s,0,0,-s,c,0,0,0,0,1,0,ox+(c_x*c-f_cy*s),oy+(c_x*s+f_cy*c),oz+base_z+c_z,1}
                         table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. c_b .. (t_2e and droite_suffix or "") .. ".mdl", transf = m_tab })
                         table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. (t_lit and t_fn or c_b) .. (t_2e and droite_suffix or "") .. (t_lit and "_Allume" or "_Eteint") .. ".mdl", transf = m_tab })
+                        if t_lit and string.find(t_fn, "TIVE_Ouvert") then
+                            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. c_b .. (t_2e and droite_suffix or "") .. "_Eteint.mdl", transf = m_tab })
+                        end
                     end
                 end
             end
@@ -363,7 +376,7 @@ function data()
                 if f_mast then table.insert(result.models, { id = "SNCF_Asset_Model/" .. f_prefix .. f_pos .. f_mast .. ".mdl", transf = {c,s,0,0,-s,c,0,0,0,0,1,0,ox,oy,oz,1} }) end
             end
 
-            -- Aspects lumineux principaux
+            -- Aspects principaux
             local is_combo_rr60 = (display == "JAUNE_CLI" and rr_state == 2)
             local is_combo_r60 = (display == "JAUNE_CLI" and force_ralent == 2)
             local inhibe_vert = (rr_state > 0 or force_ralent > 0)

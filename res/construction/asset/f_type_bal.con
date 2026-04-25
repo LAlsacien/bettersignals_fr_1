@@ -135,7 +135,7 @@ function data()
             local result = { models = {}, groundFaces = {}, terrainAlignmentLists = {} }
             
             -- =========================================================================
-            -- 1. INITIALISATION
+            -- 1. INITIALISATION ET PARAMÈTRES UI
             -- =========================================================================
             local has_jcli = (params.opt_jcli == 1)
             local is_droite = (params.opt_pos == 1)
@@ -143,6 +143,11 @@ function data()
             local swap_tecs_tscs = is_circ_droite
             local mast_idx = params.mast_type or 0
             
+            local tiv_speeds = { "30", "40", "50", "60", "70", "80", "90", "100", "110", "120", "130", "140", "150", "160" }
+            local vit_tiv_idx = params.opt_vit_tiv or 0
+            local vit_tiv_val = tiv_speeds[vit_tiv_idx + 1]
+            local is_tiv_3c = (vit_tiv_idx >= 7)
+
             local ox = (params.offset_x or 10) - 10
             local oy = (params.offset_y or 10) - 10
             local oz = (params.offset_z or 10) - 10
@@ -153,13 +158,11 @@ function data()
             -- =========================================================================
             local force_rcli = (params.paramsOverride and params.paramsOverride.rcli) and tonumber(params.paramsOverride.rcli) or 0
             
-            -- Détection du waypoint/signal suivant
             local wp_rr_next = 0
             if params.following_signal and params.following_signal.paramsOverride and params.following_signal.paramsOverride.rr then
                 wp_rr_next = tonumber(params.following_signal.paramsOverride.rr) or 0
             end
 
-            -- Annonce de Ralentissement (R)
             local force_ralent = 0
             if params.following_signal and params.following_signal.signal_speed then
                 local next_s = params.following_signal.signal_speed; local curr_s = params.signal_speed or 999
@@ -168,12 +171,18 @@ function data()
                 end
             end
 
-            -- Overrides par le waypoint suivant (Inhibition/Forçage)
             if wp_rr_next == 1 then force_ralent = 1
             elseif wp_rr_next == 2 then force_ralent = 2
             elseif wp_rr_next == 3 and force_ralent == 1 then force_ralent = 0
             elseif wp_rr_next == 4 and force_ralent == 2 then force_ralent = 0
             elseif wp_rr_next == 5 then force_ralent = 0 end
+
+            local rr_state = 0
+            local speed_ahead = params.signal_speed or 999
+            local speed_prev = params.previous_speed or 999
+            if speed_prev > speed_ahead then
+                if speed_ahead > 0 and speed_ahead <= 30 then rr_state = 1 elseif speed_ahead > 30 and speed_ahead <= 60 then rr_state = 2 end
+            end
 
             local isGreen = (params.signal_state == 1)
             local dist_red = 99
@@ -191,7 +200,7 @@ function data()
             elseif dist_red == 1 then display = (force_rcli == 1) and "ROUGE_CLI" or "JAUNE"
             elseif dist_red == 2 then display = (force_rcli == 2) and "JAUNE" or (has_jcli and "JAUNE_CLI" or "VERT") end
 
-            if display == "CARRE" or display == "ROUGE_CLI" then force_ralent = 0 end
+            if display == "CARRE" or display == "ROUGE_CLI" then rr_state = 0; force_ralent = 0 end
             if display == "JAUNE" then force_ralent = 0 end
 
             -- =========================================================================
@@ -224,10 +233,6 @@ function data()
             local matrice_feux = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+lz, 1 }
             local matrice_feux_haut = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+lz+0.66, 1 }
 
-            local lz_r = lz + 1.10
-            local matrice_r_droite = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+lz_r, 1 }
-            local matrice_r_gauche = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-(ly-0.6)*s), oy+(lx*s+(ly-0.6)*c), oz+lz_r, 1 }
-
             local o_x, o_y, o_rot = current_mast.o_x or 0, current_mast.o_y or 0, current_mast.o_rot or 0
             local raw_oz = current_mast.o_z or 0
             if is_droite and not is_nacelle then
@@ -253,7 +258,11 @@ function data()
                 elseif tab_name_brut == "TSCS_TG" then is_2e = true; cible_base = "TSCS_TG"; local l_tscs, l_tg = (wp.ipcs == 0), (wp.tableau_g == 1); if l_tscs and l_tg then tab_final, is_lit = "TSCS_TG_BOTH", true elseif l_tscs then tab_final, is_lit = "TSCS_TG_TSCS", true elseif l_tg then tab_final, is_lit = "TSCS_TG_TG", true else tab_final, is_lit = "TSCS_TG", false end
                 elseif tab_name_brut == "BLJH" then is_lit = (wp.bljh == 1); cible_base = "BLJH"
                 elseif tab_name_brut == "TG_TD" then is_2e = true; if wp.tableau_g == 1 then tab_final, cible_base, is_lit = "TG_TD_TG", "TG_TD_TG", true elseif wp.tableau_d == 1 then tab_final, cible_base, is_lit = "TG_TD_TD", "TG_TD_TD", true else tab_final, cible_base, is_lit = "TG_TD", "TG_TD", false end
-                elseif tab_name_brut == "TIVE" then local cases = is_tiv_3c and "3C" or "2C"; cible_base = "TIVE_" .. vit_tiv_val; tab_final = (wp.tivm and wp.tivm > 0) and cible_base or "TIVE_Ouvert_" .. cases; is_lit = true
+                elseif tab_name_brut == "TIVE" then 
+                    local cases = is_tiv_3c and "3C" or "2C"
+                    cible_base = "TIVE_" .. vit_tiv_val
+                    tab_final = (wp.tivm == 1) and cible_base or ("TIVE_Ouvert_" .. cases)
+                    is_lit = true
                 elseif tab_name_brut == "TECS" then is_lit = (wp.ipcs == 1)
                 elseif tab_name_brut == "TSCS" then is_lit = (wp.ipcs == 0)
                 elseif tab_name_brut == "TG" then is_lit = (wp.tableau_g == 1)
@@ -293,6 +302,7 @@ function data()
                 end
             end
 
+            -- Slots de Tableaux (Correction TIVE Digit Eteint)
             local slots = { {p="tab_mat", s=1}, {p="tab_indep_1", s=2}, {p="tab_indep_2", s=3} }
             local has_s2, has_s3, s2x, s2y, s3x, s3y = false, false, 0, 0, 0, 0
             for _, slot in ipairs(slots) do
@@ -310,10 +320,7 @@ function data()
                             s_x, s_y, sup_mdl = (slot.s==2 and -0.5 or -2.4), (string.find(current_mast.mdl, "dra") and (is_droite and -0.425 or 0.425) or 0), "Z_Sup_Normal"
                             if slot.s==3 and params.tab_indep_1==0 and mast_idx~=8 then s_x = -1.2 end
                             c_z = (mast_idx%2==0 and mast_idx<8) and -4.0 or -3.25
-                            
-                            -- Sanctuarisation Slot 3 Version Haute
                             if slot.s==3 and mast_idx%2==1 and mast_idx<8 then sup_mdl = "Z_Sup_Petit"; c_z = -4.0 end
-
                             if mast_idx==8 then sup_mdl, s_x, s_y, s_z, c_x, c_y, c_z = "Z_Sup_Nacelle", 0, 1.9, (slot.s==3 and 0.85 or 0), 0, -0.325, (slot.s==3 and 4.055 or 3.205) end
                             if slot.s==2 then has_s2, s2x, s2y = true, s_x, s_y else has_s3, s3x, s3y = true, s_x, s_y end
                             if mast_idx~=8 then c_x, c_y = s_x - 1.5, s_y - 0.025 end
@@ -324,6 +331,9 @@ function data()
                         local m_tab = {c,s,0,0,-s,c,0,0,0,0,1,0,ox+(c_x*c-f_cy*s),oy+(c_x*s+f_cy*c),oz+base_z+c_z,1}
                         table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_" .. c_b .. (t_2e and droite_suffix or "") .. ".mdl", transf = m_tab })
                         table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. (t_lit and t_fn or c_b) .. (t_2e and droite_suffix or "") .. (t_lit and "_Allume" or "_Eteint") .. ".mdl", transf = m_tab })
+                        if t_lit and string.find(t_fn, "TIVE_Ouvert") then
+                            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_" .. c_b .. (t_2e and droite_suffix or "") .. "_Eteint.mdl", transf = m_tab })
+                        end
                     end
                 end
             end
@@ -350,7 +360,9 @@ function data()
                 if f_mast then table.insert(result.models, { id = "SNCF_Asset_Model/" .. f_prefix .. f_pos .. f_mast .. ".mdl", transf = {c,s,0,0,-s,c,0,0,0,0,1,0,ox,oy,oz,1} }) end
             end
 
-            -- Aspects lumineux principaux
+            -- Aspects principaux (Harmonisation Inhibition)
+            local inhibe_vert = (rr_state > 0 or force_ralent > 0)
+            local inhibe_jcli = (rr_state == 1 or force_ralent == 1)
             local is_combo_r60 = (display == "JAUNE_CLI" and force_ralent == 2)
             if display == "CARRE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux_haut }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Eteint.mdl", transf = matrice_oeilleton })
@@ -358,21 +370,14 @@ function data()
             elseif display == "ROUGE_CLI" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Cli_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
             elseif display == "VERT" then
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_" .. ((force_ralent>0) and "Eteint" or "Allume") .. ".mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_" .. (inhibe_vert and "Eteint" or "Allume") .. ".mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
             elseif display == "JAUNE_CLI" then
-                local cli_mdl = "Z_L_Feu_Jaune_Cli_Allume.mdl"; if is_combo_r60 then cli_mdl = "Z_L_Feu_R60_Jcli_Allume.mdl" end
+                local cli_mdl = inhibe_jcli and "Z_L_Feu_Jaune_Eteint.mdl" or "Z_L_Feu_Jaune_Cli_Allume.mdl"
+                if is_combo_r60 then cli_mdl = "Z_L_Feu_R60_Jcli_Allume.mdl" end
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. cli_mdl, transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
             elseif display == "JAUNE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
-            end
-
-            if force_ralent == 1 then
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_r_droite }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_r_gauche })
-            elseif force_ralent == 2 then
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_droite }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_gauche })
-                if not is_combo_r60 then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_R60_Allume.mdl", transf = matrice_r_droite }) end
-            else
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_droite }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_gauche })
             end
 
             table.insert(result.groundFaces, { face = { { -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 } }, modes = { { type = "FILL", key = "industry_floor.lua" } }, loop = true, alignmentOffsetMode = "OBJECT", alignmentDirMode = "OBJECT", alignmentOffset = { -2.0, -1.0 } })
