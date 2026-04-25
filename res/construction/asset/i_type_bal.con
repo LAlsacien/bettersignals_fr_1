@@ -1,20 +1,18 @@
 function data()
+    -- =========================================================================
+    -- UTILITAIRES DE CONFIGURATION
+    -- =========================================================================
     local function intRange(start, stop, step)
         local a = {}
         local i = start
-        while i <= stop do
-            table.insert(a, i)
-            i = i + step
-        end
+        while i <= stop do table.insert(a, i); i = i + step end
         return a
     end
 
     local function map(a, f)
         local res = {}
         if a and type(a) == "table" then
-            for _, v in ipairs(a) do
-                table.insert(res, f(v))
-            end
+            for _, v in ipairs(a) do table.insert(res, f(v)) end
         end
         return res
     end
@@ -64,260 +62,140 @@ function data()
             },
             {
                 key = "offset_x",
-                name = _("Décalage X (Avant/Arrière)"),
-                uiType = "SLIDER",
-                values = range_offset,
-                defaultIndex = 10,
+                name = _("Décalage X (Avant/Arrière)"), uiType = "SLIDER", values = range_offset, defaultIndex = 10,
             },
             {
                 key = "offset_y",
-                name = _("Décalage Y (Gauche/Droite)"),
-                uiType = "SLIDER",
-                values = range_offset,
-                defaultIndex = 10,
+                name = _("Décalage Y (Gauche/Droite)"), uiType = "SLIDER", values = range_offset, defaultIndex = 10,
             },
             {
                 key = "offset_z",
-                name = _("Décalage Z (Haut/Bas)"),
-                uiType = "SLIDER",
-                values = range_offset,
-                defaultIndex = 10,
+                name = _("Décalage Z (Haut/Bas)"), uiType = "SLIDER", values = range_offset, defaultIndex = 10,
             },
             {
                 key = "offset_rot",
-                name = _("Rotation Z (Degrés)"),
-                uiType = "SLIDER",
-                values = range_rot,
-                defaultIndex = 36,
+                name = _("Rotation Z (Degrés)"), uiType = "SLIDER", values = range_rot, defaultIndex = 36,
             }
         },
         updateFn = function(params)
-            local result = {
-                models = {},
-                groundFaces = {},
-                terrainAlignmentLists = {}
-            }
+            local result = { models = {}, groundFaces = {}, terrainAlignmentLists = {} }
             
-            local force_blanc = 0
-            if params.paramsOverride and params.paramsOverride.blanc then force_blanc = tonumber(params.paramsOverride.blanc) end
-
-            local isGreen = (params.signal_state and params.signal_state == 1)
-            local dist_red = 99
-
-            if not isGreen then 
-                dist_red = 0
-            elseif params.following_signal then
-                if params.following_signal.signal_state == 0 then 
-                    dist_red = 1
-                end
-            end
-
-            local display = "BLANC"
-            
-            if dist_red == 0 then 
-                display = "VIOLET" 
-                
-            elseif dist_red >= 1 then 
-                if force_blanc == 2 then 
-                    display = "BLANC_CLI" 
-                else 
-                    display = "BLANC" 
-                end
-            end
-                
+            -- =========================================================================
+            -- 1. INITIALISATION ET PARAMÈTRES UI
+            -- =========================================================================
+            local is_droite = (params.opt_pos == 1)
             local mast_idx = params.mast_type or 0
-            local mast_config = {
-                [0] = { mdl = "Z_Base_M_simple.mdl",         plaque_mdl = "Z_Plaque_Type_C_Nf_Cv.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0,     pz = 0 }, 
-                [1] = { mdl = "Z_Base_M_simple_haut.mdl",    plaque_mdl = "Z_Plaque_Type_C_Nf_Cv.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0,     pz = 0 },
-                [2] = { mdl = "Z_Base_M_leger.mdl",          plaque_mdl = "Z_Plaque_Type_C_Nf_Cv.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0,     pz = 0 },
-                [3] = { mdl = "Z_Base_M_leger_haut.mdl",     plaque_mdl = "Z_Plaque_Type_C_Nf_Cv.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0,     pz = 0 },
-                [4] = { mdl = "Z_Base_M_leger_dra.mdl",      plaque_mdl = "Z_Plaque_Type_C_Nf_Cv.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0.425, pz = 0 },
-                [5] = { mdl = "Z_Base_M_leger_haut_dra.mdl", plaque_mdl = "Z_Plaque_Type_C_Nf_Cv.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.425, pz = 0 },
-                [6] = { mdl = "Z_Base_M_lourd.mdl",          plaque_mdl = "Z_Plaque_Type_C_Nf_Cv.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0.2,   pz = 0 },
-                [7] = { mdl = "Z_Base_M_lourd_haut.mdl",     plaque_mdl = "Z_Plaque_Type_C_Nf_Cv.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.2,   pz = 0 },
-                [8] = { mdl = "Z_Base_M_lourd_dra.mdl",      plaque_mdl = "Z_Plaque_Type_C_Nf_Cv.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0.64,  pz = 0 },
-                [9] = { mdl = "Z_Base_M_lourd_haut_dra.mdl", plaque_mdl = "Z_Plaque_Type_C_Nf_Cv.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.64,  pz = 0 },
-                [10]= { mdl = "Z_Base_M_nacelle_moderne.mdl",        plaque_mdl = "Z_Plaque_Nacelle_Type_C_Nf_Cv.mdl", x = -0.15, y = -1.35, z = 3.205, px = 0,    py = 0,     pz = 0 },
-                [11]= { mdl = nil, plaque_mdl = nil, x = 0, y = 0, z = 0, px = 0, py = 0, pz = 0 }
-            }
-            local current_mast = mast_config[mast_idx] or mast_config[0]
-
-            local base_z = 1.05
+            
             local ox = (params.offset_x or 10) - 10
             local oy = (params.offset_y or 10) - 10
             local oz = (params.offset_z or 10) - 10
             local orot = ((params.offset_rot or 36) * 5) - 180
 
-            local is_droite = (params.opt_pos and params.opt_pos == 1)
-            local is_nacelle = (current_mast.mdl and string.find(current_mast.mdl, "nacelle")) ~= nil
-            
-            local local_shift_y = 0 
-            local final_mast_mdl = current_mast.mdl
-            
+            -- =========================================================================
+            -- 2. MOTEUR LOGIQUE (RADAR)
+            -- =========================================================================
+            local force_blanc = (params.paramsOverride and params.paramsOverride.blanc) and tonumber(params.paramsOverride.blanc) or 0
+
+            local isGreen = (params.signal_state == 1)
+            local dist_red = (not isGreen) and 0 or (params.following_signal and (params.following_signal.signal_state == 0 and 1 or 2) or 99)
+
+            local display = "BLANC"
+            if dist_red == 0 then display = "VIOLET" 
+            elseif dist_red >= 1 then display = (force_blanc == 2) and "BLANC_CLI" or "BLANC" end
+
+            -- =========================================================================
+            -- 3. MOTEUR GÉOMÉTRIQUE (MATRICES)
+            -- =========================================================================
+            local mast_config = {
+                [0] = { mdl = "Z_Base_M_simple.mdl", px = 0, py = 0, pz = 0 }, 
+                [1] = { mdl = "Z_Base_M_simple_haut.mdl", z = 1.86, px = 0, py = 0, pz = 0 },
+                [2] = { mdl = "Z_Base_M_leger.mdl", px = 0, py = 0, pz = 0 },
+                [3] = { mdl = "Z_Base_M_leger_haut.mdl", z = 1.86, px = 0, py = 0, pz = 0 },
+                [4] = { mdl = "Z_Base_M_leger_dra.mdl", px = 0, py = 0.425, pz = 0 },
+                [5] = { mdl = "Z_Base_M_leger_haut_dra.mdl", z = 1.86, px = 0, py = 0.425, pz = 0 },
+                [6] = { mdl = "Z_Base_M_lourd.mdl", px = 0, py = 0.2, pz = 0 },
+                [7] = { mdl = "Z_Base_M_lourd_haut.mdl", z = 1.86, px = 0, py = 0.2, pz = 0 },
+                [8] = { mdl = "Z_Base_M_lourd_dra.mdl", px = 0, py = 0.64, pz = 0 },
+                [9] = { mdl = "Z_Base_M_lourd_haut_dra.mdl", z = 1.86, px = 0, py = 0.64, pz = 0 },
+                [10]= { mdl = "Z_Base_M_nacelle_moderne.mdl", x = -0.15, y = -1.35, z = 3.205, px = 0, py = 0, pz = 0 },
+                [11]= { mdl = nil } -- Signal Nain
+            }
+            local current_mast = mast_config[mast_idx] or mast_config[0]
+            local is_nacelle = (mast_idx == 10)
+            local local_shift_y = 0; local final_mast_mdl = current_mast.mdl
             if is_droite then
-                if is_nacelle then
-                    local_shift_y = -2.4 
-                else
-                    local_shift_y = -4.8 
-                    if final_mast_mdl ~= nil then
-                        final_mast_mdl = string.gsub(final_mast_mdl, "%.mdl", "_Droite.mdl")
-                    end
-                end
+                if is_nacelle then local_shift_y = -2.4 
+                else local_shift_y = -4.8; if final_mast_mdl then final_mast_mdl = string.gsub(final_mast_mdl, ".mdl", "_Droite.mdl") end end
             end
 
-            local rad = math.rad(orot)
-            local c = math.cos(rad)
-            local s = math.sin(rad)
+            local rad = math.rad(orot); local c = math.cos(rad); local s = math.sin(rad); local base_z = 1.05
+            local mast_local_y = is_droite and local_shift_y or 0
+            local matrice_mat = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(0*c-mast_local_y*s), oy+(0*s+mast_local_y*c), oz+base_z, 1 }
 
-            local mast_local_y = 0
-            if is_droite then
-                mast_local_y = local_shift_y
-            end
-            
-            local matrice_mat = {
-                c,  s, 0, 0,
-               -s,  c, 0, 0,
-                0,  0, 1, 0,
-                ox + (0 * c - mast_local_y * s), oy + (0 * s + mast_local_y * c), oz + base_z, 1
-            }
+            local lx = current_mast.x or 0; local ly = (current_mast.y or 0) + local_shift_y; local lz = base_z + (current_mast.z or 0)
+            local matrice_feux = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+lz, 1 }
 
-            local lx = current_mast.x or 0
-            local ly = (current_mast.y or 0) + local_shift_y
-            local lz = base_z + (current_mast.z or 0)
-            
-            local matrice_feux = {
-                c,  s, 0, 0,
-               -s,  c, 0, 0,
-                0,  0, 1, 0,
-                ox + (lx * c - ly * s), oy + (lx * s + ly * c), oz + lz, 1
-            }
+            local px, py = current_mast.px or 0, (is_droite and not is_nacelle and -(current_mast.py or 0) or (current_mast.py or 0)) + local_shift_y
+            local matrice_plaque = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(px*c-py*s), oy+(px*s+py*c), oz+base_z+(current_mast.pz or 0), 1 }
 
-            local px = current_mast.px or 0
-            local py = current_mast.py or 0
-            if is_droite and not is_nacelle then
-                py = -py
-            end
-            py = py + local_shift_y
-            
-            local pz = base_z + (current_mast.pz or 0)
-            local matrice_plaque = {
-                c,  s, 0, 0,
-               -s,  c, 0, 0,
-                0,  0, 1, 0,
-                ox + (px * c - py * s), oy + (px * s + py * c), oz + pz, 1
-            }
+            -- Matrices spécifiques aux feux du Type I
+            local z_blanc = lz - 0.22; local z_violet = lz - 0.88
+            local matrice_blanc = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+z_blanc, 1 }
+            local matrice_rouge = matrice_blanc 
+            local matrice_violet = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+z_violet, 1 }
 
-            local z_haut = lz - 0.22
-            local matrice_blanc = {
-                c,  s, 0, 0,
-               -s,  c, 0, 0,
-                0,  0, 1, 0,
-                ox + (lx * c - ly * s), oy + (lx * s + ly * c), oz + z_haut, 1
-            }
-            local matrice_rouge = matrice_blanc -- Partage le même trou en haut
-
-            local z_bas = lz - 0.88
-            local matrice_violet = {
-                c,  s, 0, 0,
-               -s,  c, 0, 0,
-                0,  0, 1, 0,
-                ox + (lx * c - ly * s), oy + (lx * s + ly * c), oz + z_bas, 1
-            }
-
+            -- Cas particulier : Signal Nain (Bas)
             if mast_idx == 11 then
-                local y_blanc = ly + 0.1378
-                local z_blanc_nain = lz - 3.8581
-                matrice_blanc = {
-                    c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0,
-                    ox + (lx * c - y_blanc * s), oy + (lx * s + y_blanc * c), oz + z_blanc_nain, 1
-                }
-                
-                local y_rouge = ly - 0.1411
-                local z_rouge_nain = lz - 3.4255
-                matrice_rouge = {
-                    c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0,
-                    ox + (lx * c - y_rouge * s), oy + (lx * s + y_rouge * c), oz + z_rouge_nain, 1
-                }
-
-                local y_violet = ly - 0.1411
-                local z_violet_nain = lz - 4.0855
-                matrice_violet = {
-                    c, s, 0, 0, -s, c, 0, 0, 0, 0, 1, 0,
-                    ox + (lx * c - y_violet * s), oy + (lx * s + y_violet * c), oz + z_violet_nain, 1
-                }
+                local y_b, z_b_n = ly + 0.1378, lz - 3.8581
+                matrice_blanc = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-y_b*s), oy+(lx*s+y_b*c), oz+z_b_n, 1 }
+                local y_r, z_r_n = ly - 0.1411, lz - 3.4255
+                matrice_rouge = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-y_r*s), oy+(lx*s+y_r*c), oz+z_r_n, 1 }
+                local y_v, z_v_n = ly - 0.1411, lz - 4.0855
+                matrice_violet = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-y_v*s), oy+(lx*s+y_v*c), oz+z_v_n, 1 }
             end
 
-            local f_type = params.add_fleche or 0
-            
-            if f_type > 0 then
-                local matrice_fleche = {
-                    c,  s, 0, 0,
-                   -s,  c, 0, 0,
-                    0,  0, 1, 0,
-                    ox, oy, oz, 1
-                }
-
-                local f_prefixes = { "", "SNCF_Fleche", "SNCF_Fleche2", "SNCF_Fleche3", "SNCF_FlecheV" }
-                local f_prefix = f_prefixes[f_type + 1]
-                
-                local f_pos = is_droite and "_dg" or "_gd"
-                
-                local f_mast_map = {
-                    [0] = "_s",   -- Simple
-                    [1] = "_sh",  -- Simple Haut
-                    [2] = "_l",   -- Léger
-                    [3] = "_lh",  -- Léger Haut
-                    [4] = "_l",   -- Léger & Drapeau
-                    [5] = "_lh",  -- Léger Haut & Drapeau
-                    [6] = "_lo",  -- Lourd
-                    [7] = "_loh", -- Lourd Haut
-                    [8] = "_loD", -- Lourd & Drapeau
-                    [9] = "_lohD" -- Lourd Haut & Drapeau
-                }
-                
-                local f_mast = f_mast_map[mast_idx]
-                
-                if f_mast then
-                    local fleche_mdl = f_prefix .. f_pos .. f_mast .. ".mdl"
-                    table.insert(result.models, { id = "SNCF_Asset_Model/" .. fleche_mdl, transf = matrice_fleche })
-                end
-            end
-
+            -- =========================================================================
+            -- 4. ASSEMBLAGE FINAL
+            -- =========================================================================
             if mast_idx == 11 then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_Type_I_bas.mdl", transf = matrice_feux })
             else
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. final_mast_mdl, transf = matrice_mat })
+                if final_mast_mdl then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. final_mast_mdl, transf = matrice_mat }) end
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_Type_I.mdl", transf = matrice_feux })
-                
-                if current_mast.plaque_mdl then
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.plaque_mdl, transf = matrice_plaque })
+                local final_plaque = is_nacelle and "Z_Plaque_Nacelle_Type_C_Nf_Cv.mdl" or "Z_Plaque_Type_C_Nf_Cv.mdl"
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. final_plaque, transf = matrice_plaque })
+            end
+
+            -- Flèche de direction
+            local fleche_type = params.add_fleche or 0
+            if fleche_type > 0 and mast_idx < 11 then
+                local f_prefixes = { "", "SNCF_Fleche", "SNCF_Fleche2", "SNCF_Fleche3", "SNCF_FlecheV" }
+                local f_prefix = f_prefixes[fleche_type + 1]
+                local f_pos = is_droite and "_dg" or "_gd"
+                local f_mast_map = { [0]="_s",[1]="_sh",[2]="_l",[3]="_lh",[4]="_l",[5]="_lh",[6]="_lo",[7]="_loh",[8]="_loD",[9]="_lohD",[10]="_lo" }
+                local f_mast = f_mast_map[mast_idx]
+                if f_mast then
+                    table.insert(result.models, { 
+                        id = "SNCF_Asset_Model/" .. f_prefix .. f_pos .. f_mast .. ".mdl", 
+                        transf = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox,oy,oz, 1 } 
+                    })
                 end
             end
 
             if display == "VIOLET" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Eteint.mdl", transf = matrice_blanc })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Violet_Allume.mdl", transf = matrice_violet })
-            
             elseif display == "BLANC_CLI" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_rouge })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Cli_Allume.mdl", transf = matrice_blanc })  
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Eteint.mdl", transf = matrice_blanc })
-            
             elseif display == "BLANC" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_rouge })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Allume.mdl", transf = matrice_blanc })
             end
 
-            table.insert(result.groundFaces, {  
-                face = { { -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 } },
-                modes = { { type = "FILL", key = "industry_floor.lua" } },
-                loop = true,
-                alignmentOffsetMode = "OBJECT",
-                alignmentDirMode = "OBJECT",
-                alignmentOffset = { -2.0, -1.0 },
-            })
+            table.insert(result.groundFaces, { face = { { -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 } }, modes = { { type = "FILL", key = "industry_floor.lua" } }, loop = true, alignmentOffsetMode = "OBJECT", alignmentDirMode = "OBJECT", alignmentOffset = { -2.0, -1.0 } })
             table.insert(result.terrainAlignmentLists, { type = "EQUAL", faces =  { } })
-            
             return result
         end
     }

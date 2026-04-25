@@ -1,20 +1,18 @@
 function data()
+    -- =========================================================================
+    -- UTILITAIRES DE CONFIGURATION
+    -- =========================================================================
     local function intRange(start, stop, step)
         local a = {}
         local i = start
-        while i <= stop do
-            table.insert(a, i)
-            i = i + step
-        end
+        while i <= stop do table.insert(a, i); i = i + step end
         return a
     end
 
     local function map(a, f)
         local res = {}
         if a and type(a) == "table" then
-            for _, v in ipairs(a) do
-                table.insert(res, f(v))
-            end
+            for _, v in ipairs(a) do table.insert(res, f(v)) end
         end
         return res
     end
@@ -37,10 +35,10 @@ function data()
         order = 11114,
         params = {
             {
-            key = "opt_jcli",
-            name = _("Activer le Jaune Clignotant"),
-            uiType = "CHECKBOX",
-            defaultIndex = 0,
+                key = "opt_jcli",
+                name = _("Activer le Jaune Clignotant"),
+                uiType = "CHECKBOX",
+                defaultIndex = 0,
             },
             {
                 key = "opt_pos",
@@ -69,369 +67,190 @@ function data()
             },
             {
                 key = "offset_x",
-                name = _("Décalage X (Avant/Arrière)"),
-                uiType = "SLIDER",
-                values = range_offset,
-                defaultIndex = 10,
+                name = _("Décalage X (Avant/Arrière)"), uiType = "SLIDER", values = range_offset, defaultIndex = 10,
             },
             {
                 key = "offset_y",
-                name = _("Décalage Y (Gauche/Droite)"),
-                uiType = "SLIDER",
-                values = range_offset,
-                defaultIndex = 10,
+                name = _("Décalage Y (Gauche/Droite)"), uiType = "SLIDER", values = range_offset, defaultIndex = 10,
             },
             {
                 key = "offset_z",
-                name = _("Décalage Z (Haut/Bas)"),
-                uiType = "SLIDER",
-                values = range_offset,
-                defaultIndex = 10,
+                name = _("Décalage Z (Haut/Bas)"), uiType = "SLIDER", values = range_offset, defaultIndex = 10,
             },
             {
                 key = "offset_rot",
-                name = _("Rotation Z (Degrés)"),
-                uiType = "SLIDER",
-                values = range_rot,
-                defaultIndex = 36,
+                name = _("Rotation Z (Degrés)"), uiType = "SLIDER", values = range_rot, defaultIndex = 36,
             }
         },
         updateFn = function(params)
-            local result = {
-                models = {},
-                groundFaces = {},
-                terrainAlignmentLists = {}
-            }
+            local result = { models = {}, groundFaces = {}, terrainAlignmentLists = {} }
             
-            -- 1. LECTURE DES OPTIONS
-            local has_jcli = false
-            if params.opt_jcli and tonumber(params.opt_jcli) == 1 then has_jcli = true end
-
-           -- 2. LECTURE DES WAYPOINTS & SYSTEME AUTO
-            local force_rcli = 0
-            
-            if params.paramsOverride and params.paramsOverride.rcli then 
-                force_rcli = tonumber(params.paramsOverride.rcli) 
-            end
-            
-            local force_ralent = 0
-            local wp_rr = 0
-
-            if params.following_signal and params.following_signal.paramsOverride and params.following_signal.paramsOverride.rr then
-                wp_rr = tonumber(params.following_signal.paramsOverride.rr)
-            end
-
-            if params.following_signal and params.following_signal.signal_speed then
-                local next_speed = params.following_signal.signal_speed
-                local current_speed = params.signal_speed or 999
-                
-                if current_speed > next_speed then
-                    if next_speed > 0 and next_speed <= 30 then
-                        force_ralent = 1
-                    elseif next_speed > 30 and next_speed <= 60 then
-                        force_ralent = 2
-                    end
-                end
-            end
-
-            if wp_rr == 1 then 
-                force_ralent = 1
-            elseif wp_rr == 2 then 
-                force_ralent = 2
-            elseif wp_rr == 3 and force_ralent == 1 then 
-                force_ralent = 0
-            elseif wp_rr == 4 and force_ralent == 2 then 
-                force_ralent = 0
-            elseif wp_rr == 5 then 
-                force_ralent = 0
-            end
-
-            -- 3. GESTION DES CANTONS
-            local isGreen = (params.signal_state and params.signal_state == 1)
-            local dist_red = 99
-
-            if not isGreen then 
-                dist_red = 0
-            elseif params.following_signal then
-                if params.following_signal.signal_state == 0 then 
-                    dist_red = 1
-                elseif params.following_signal.following_signal then
-                    if params.following_signal.following_signal.signal_state == 0 then 
-                        dist_red = 2
-                    elseif params.following_signal.following_signal.following_signal and params.following_signal.following_signal.following_signal.signal_state == 0 then 
-                        dist_red = 3
-                    end
-                end
-            end
-
-            -- 4. SÉQUENCES DE SIGNALISATION
-            local display = "VERT"
-            
-            if dist_red == 0 then 
-                display = "ROUGE" 
-                
-            elseif dist_red == 1 then 
-                if force_rcli == 1 then 
-                    display = "ROUGE_CLI" 
-                else 
-                    display = "JAUNE" 
-                end
-                
-            elseif dist_red == 2 then
-                if force_rcli == 2 then 
-                    display = "JAUNE"
-                elseif has_jcli then 
-                    display = "JAUNE_CLI" 
-                else 
-                    display = "VERT" 
-                end
-                
-            elseif dist_red >= 3 then 
-                display = "VERT" 
-            end
-
-            if display == "ROUGE" or display == "ROUGE_CLI" or display == "JAUNE" then
-                force_ralent = 0
-            end
-
+            -- =========================================================================
+            -- 1. INITIALISATION ET PARAMÈTRES UI
+            -- =========================================================================
+            local has_jcli = (params.opt_jcli == 1)
+            local is_droite = (params.opt_pos == 1)
             local mast_idx = params.mast_type or 0
-            local mast_config = {
-                -- MATS LEGERS :
-                [0] = { mdl = "Z_Base_M_leger.mdl",          plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_leger.mdl", x = 0, y = 0, z = 0,     px = 0, py = 0,     pz = 0, o_x = 0, o_y = 0, o_z = 0, o_rot = 0 },
-                [1] = { mdl = "Z_Base_M_leger_haut.mdl",     plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_leger.mdl", x = 0, y = 0, z = 1.860, px = 0, py = 0,     pz = 0, o_x = 0, o_y = -0, o_z = 1.86, o_rot = 0 },
-                [2] = { mdl = "Z_Base_M_leger_dra.mdl",      plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_leger.mdl", x = 0, y = 0, z = 0,     px = 0, py = 0.425, pz = 0, o_x = 0, o_y = -0, o_z = 0, o_rot = 0 },
-                [3] = { mdl = "Z_Base_M_leger_haut_dra.mdl", plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_leger.mdl", x = 0, y = 0, z = 1.860, px = 0, py = 0.425, pz = 0, o_x = 0, o_y = -0, o_z = 1.86, o_rot = 0 },
-                
-                -- MATS LOURDS :
-                [4] = { mdl = "Z_Base_M_lourd.mdl",          plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_lourd.mdl", x = 0, y = 0, z = 0,     px = 0, py = 0.2,   pz = 0, o_x = -0.35, o_y = 0.6, o_z = -0.6, o_rot = -13.5 },
-                [5] = { mdl = "Z_Base_M_lourd_haut.mdl",     plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_lourd.mdl", x = 0, y = 0, z = 1.860, px = 0, py = 0.2,   pz = 0, o_x = 0, o_y = 0, o_z = 1.86, o_rot = 0 },
-                
-                -- MATS LOURDS DRAPEAUX :
-                [6] = { mdl = "Z_Base_M_lourd_dra.mdl",      plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_lourd.mdl", x = 0, y = 0, z = 0,     px = 0, py = 0.64,  pz = 0, o_x = -0.35, o_y = 0.85, o_z = -0.6, o_rot = -13.5 },
-                [7] = { mdl = "Z_Base_M_lourd_haut_dra.mdl", plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_lourd.mdl", x = 0, y = 0, z = 1.860, px = 0, py = 0.64,  pz = 0, o_x = -0.1, o_y = 0.2, o_z = 1.86, o_rot = 0 },
-                
-                [8] = { mdl = "Z_Base_M_nacelle_moderne.mdl",plaque_mdl = "Z_Plaque_Nacelle_Type_A_BAL.mdl", cage_mdl = nil, x = -0.1, y = -1.35, z = 3.205, px = 0, py = 0, pz = 0, o_x = -0.825, o_y = -0.5, o_z = 3.25, o_rot = -13.5 }
-            }
-            local current_mast = mast_config[mast_idx] or mast_config[0]
-
-            local base_z = 1.05
+            
             local ox = (params.offset_x or 10) - 10
             local oy = (params.offset_y or 10) - 10
             local oz = (params.offset_z or 10) - 10
             local orot = ((params.offset_rot or 36) * 5) - 180
 
-            local is_droite = (params.opt_pos and params.opt_pos == 1)
-            local is_nacelle = (current_mast.mdl and string.find(current_mast.mdl, "nacelle")) ~= nil
+            -- =========================================================================
+            -- 2. MOTEUR LOGIQUE (RADAR / RALENTISSEMENT)
+            -- =========================================================================
+            local force_rcli = (params.paramsOverride and params.paramsOverride.rcli) and tonumber(params.paramsOverride.rcli) or 0
             
-            local local_shift_y = 0 
-            local final_mast_mdl = current_mast.mdl -- On prépare la variable du nom du mât
-            
-            if is_droite then
-                if is_nacelle then
-                    local_shift_y = -2.4 
-                else
-                    local_shift_y = -4.8 
-                    final_mast_mdl = string.gsub(final_mast_mdl, ".mdl", "_Droite.mdl")
+            -- Détection du waypoint/signal suivant
+            local wp_rr_next = 0
+            if params.following_signal and params.following_signal.paramsOverride and params.following_signal.paramsOverride.rr then
+                wp_rr_next = tonumber(params.following_signal.paramsOverride.rr) or 0
+            end
+
+            -- Annonce de Ralentissement (R)
+            local force_ralent = 0
+            if params.following_signal and params.following_signal.signal_speed then
+                local next_s = params.following_signal.signal_speed; local curr_s = params.signal_speed or 999
+                if curr_s > next_s then
+                    if next_s > 0 and next_s <= 30 then force_ralent = 1 elseif next_s > 30 and next_s <= 60 then force_ralent = 2 end
                 end
             end
-            -- ===============================================
 
-            local rad = math.rad(orot)
-            local c = math.cos(rad)
-            local s = math.sin(rad)
+            -- Overrides par le waypoint suivant (Inhibition/Forçage)
+            if wp_rr_next == 1 then force_ralent = 1
+            elseif wp_rr_next == 2 then force_ralent = 2
+            elseif wp_rr_next == 3 and force_ralent == 1 then force_ralent = 0
+            elseif wp_rr_next == 4 and force_ralent == 2 then force_ralent = 0
+            elseif wp_rr_next == 5 then force_ralent = 0 end
 
-            local mast_local_y = 0
-            if is_droite then
-                mast_local_y = local_shift_y
-            end
-            
-            local matrice_mat = {
-                c,  s, 0, 0,
-               -s,  c, 0, 0,
-                0,  0, 1, 0,
-                ox + (0 * c - mast_local_y * s), oy + (0 * s + mast_local_y * c), oz + base_z, 1
-            }
-            local lx = current_mast.x or 0
-            local ly = (current_mast.y or 0) + local_shift_y
-            local lz = base_z + (current_mast.z or 0)
-            
-            local matrice_feux = {
-                c,  s, 0, 0,
-               -s,  c, 0, 0,
-                0,  0, 1, 0,
-                ox + (lx * c - ly * s), oy + (lx * s + ly * c), oz + lz, 1
-            }
-
-            local lz_r = base_z + (current_mast.z or 0) + 1.10
-            local ly_r_droite = ly
-            local ly_r_gauche = ly - 0.60
-            
-            local matrice_r_droite = {
-                c,  s, 0, 0,
-               -s,  c, 0, 0,
-                0,  0, 1, 0,
-                ox + (lx * c - ly_r_droite * s), oy + (lx * s + ly_r_droite * c), oz + lz_r, 1
-            }
-            
-            local matrice_r_gauche = {
-                c,  s, 0, 0,
-               -s,  c, 0, 0,
-                0,  0, 1, 0,
-                ox + (lx * c - ly_r_gauche * s), oy + (lx * s + ly_r_gauche * c), oz + lz_r, 1
-            }
-
-            local px = current_mast.px or 0
-            local py = current_mast.py or 0
-            if is_droite and not is_nacelle then
-                py = -py
-            end
-            py = py + local_shift_y
-            
-            local pz = base_z + (current_mast.pz or 0)
-            local matrice_plaque = {
-                c,  s, 0, 0,
-               -s,  c, 0, 0,
-                0,  0, 1, 0,
-                ox + (px * c - py * s), oy + (px * s + py * c), oz + pz, 1
-            }
-
-             local f_type = params.add_fleche or 0
-            
-            if f_type > 0 then
-                local matrice_fleche = {
-                    c,  s, 0, 0,
-                   -s,  c, 0, 0,
-                    0,  0, 1, 0,
-                    ox, oy, oz, 1
-                }
-
-                local f_prefixes = { "", "SNCF_Fleche", "SNCF_Fleche2", "SNCF_Fleche3", "SNCF_FlecheV" }
-                local f_prefix = f_prefixes[f_type + 1]
-                
-                local f_pos = is_droite and "_dg" or "_gd"
-                
-                local f_mast_map = {
-                    [0] = "_l",   -- Léger
-                    [1] = "_lh",  -- Léger Haut
-                    [2] = "_l",   -- Léger & Drapeau
-                    [3] = "_lh",  -- Léger Haut & Drapeau
-                    [4] = "_lo",  -- Lourd
-                    [5] = "_loh", -- Lourd Haut
-                    [6] = "_loD", -- Lourd & Drapeau
-                    [7] = "_lohD" -- Lourd Haut & Drapeau
-                }
-                
-                local f_mast = f_mast_map[mast_idx]
-                
-                if f_mast then
-                    local fleche_mdl = f_prefix .. f_pos .. f_mast .. ".mdl"
-                    table.insert(result.models, { id = "SNCF_Asset_Model/" .. fleche_mdl, transf = matrice_fleche })
+            local isGreen = (params.signal_state == 1)
+            local dist_red = 99
+            if not isGreen then dist_red = 0
+            elseif params.following_signal then
+                if params.following_signal.signal_state == 0 then dist_red = 1
+                elseif params.following_signal.following_signal then
+                    if params.following_signal.following_signal.signal_state == 0 then dist_red = 2
+                    elseif params.following_signal.following_signal.following_signal and params.following_signal.following_signal.following_signal.signal_state == 0 then dist_red = 3 end
                 end
             end
-            
+
+            local display = "VERT"
+            if dist_red == 0 then display = "ROUGE" 
+            elseif dist_red == 1 then display = (force_rcli == 1) and "ROUGE_CLI" or "JAUNE"
+            elseif dist_red == 2 then display = (force_rcli == 2) and "JAUNE" or (has_jcli and "JAUNE_CLI" or "VERT") end
+
+            if display == "ROUGE" or display == "ROUGE_CLI" or display == "JAUNE" then force_ralent = 0 end
+
+            -- =========================================================================
+            -- 3. MOTEUR GÉOMÉTRIQUE (MATRICES)
+            -- =========================================================================
+            local mast_config = {
+                [0] = { mdl = "Z_Base_M_leger.mdl", plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_leger.mdl", x = 0, y = 0, z = 0, px = 0, py = 0, pz = 0 },
+                [1] = { mdl = "Z_Base_M_leger_haut.mdl", plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_leger.mdl", x = 0, y = 0, z = 1.86, px = 0, py = 0, pz = 0 },
+                [2] = { mdl = "Z_Base_M_leger_dra.mdl", plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_leger.mdl", x = 0, y = 0, z = 0, px = 0, py = 0.425, pz = 0 },
+                [3] = { mdl = "Z_Base_M_leger_haut_dra.mdl", plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_leger.mdl", x = 0, y = 0, z = 1.86, px = 0, py = 0.425, pz = 0 },
+                [4] = { mdl = "Z_Base_M_lourd.mdl", plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_lourd.mdl", x = 0, y = 0, z = 0, px = 0, py = 0.2, pz = 0 },
+                [5] = { mdl = "Z_Base_M_lourd_haut.mdl", plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_lourd.mdl", x = 0, y = 0, z = 1.86, px = 0, py = 0.2, pz = 0 },
+                [6] = { mdl = "Z_Base_M_lourd_dra.mdl", plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_lourd.mdl", x = 0, y = 0, z = 0, px = 0, py = 0.64, pz = 0 },
+                [7] = { mdl = "Z_Base_M_lourd_haut_dra.mdl", plaque_mdl = "Z_Plaque_Type_A_BAL.mdl", cage_mdl = "Z_Protection_EFGH_lourd.mdl", x = 0, y = 0, z = 1.86, px = 0, py = 0.64, pz = 0 },
+                [8] = { mdl = "Z_Base_M_nacelle_moderne.mdl", plaque_mdl = "Z_Plaque_Nacelle_Type_A_BAL.mdl", cage_mdl = nil, x = -0.1, y = -1.35, z = 3.205, px = 0, py = 0, pz = 0 }
+            }
+            local current_mast = mast_config[mast_idx] or mast_config[0]
+            local is_nacelle = (string.find(current_mast.mdl, "nacelle") ~= nil)
+            local local_shift_y = 0; local final_mast_mdl = current_mast.mdl
+            if is_droite then
+                if is_nacelle then local_shift_y = -2.4 
+                else local_shift_y = -4.8; final_mast_mdl = string.gsub(final_mast_mdl, ".mdl", "_Droite.mdl") end
+            end
+
+            local rad = math.rad(orot); local c = math.cos(rad); local s = math.sin(rad); local base_z = 1.05
+            local mast_local_y = is_droite and local_shift_y or 0
+            local matrice_mat = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(0*c-mast_local_y*s), oy+(0*s+mast_local_y*c), oz+base_z, 1 }
+
+            local lx = current_mast.x or 0; local ly = (current_mast.y or 0) + local_shift_y; local lz = base_z + (current_mast.z or 0)
+            local matrice_feux = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+lz, 1 }
+
+            -- Matrices du Ralentissement (R)
+            local lz_r = lz + 1.10
+            local matrice_r_droite = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+lz_r, 1 }
+            local matrice_r_gauche = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-(ly-0.6)*s), oy+(lx*s+(ly-0.6)*c), oz+lz_r, 1 }
+
+            -- Matrice de la Plaque
+            local px, py = current_mast.px or 0, (is_droite and not is_nacelle and -(current_mast.py or 0) or (current_mast.py or 0)) + local_shift_y
+            local matrice_plaque = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(px*c-py*s), oy+(px*s+py*c), oz+base_z+(current_mast.pz or 0), 1 }
+
+            -- =========================================================================
+            -- 4. ASSEMBLAGE FINAL
+            -- =========================================================================
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. final_mast_mdl, transf = matrice_mat })
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_Type_E.mdl", transf = matrice_feux })
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.plaque_mdl, transf = matrice_plaque })
             
-            local draw_cage = true
-            local extra_cage_y = 0
-            
-            if is_droite then
-                if mast_idx == 5 or mast_idx == 6 or mast_idx == 7 then
-                    draw_cage = false -- 
-                elseif mast_idx == 0 or mast_idx == 1 or mast_idx == 2 or mast_idx == 3 then
-                    extra_cage_y = -0.31
+            -- Gestion de la cage de protection
+            if current_mast.cage_mdl and (not is_droite or (mast_idx < 5)) then
+                local cage_y = local_shift_y + (is_droite and mast_idx < 4 and -0.31 or 0)
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.cage_mdl, transf = {c,s,0,0,-s,c,0,0,0,0,1,0,ox+(0*c-cage_y*s),oy+(0*s+cage_y*c),oz+lz,1} })
+            end
+
+            -- Flèche de direction
+            local fleche_type = params.add_fleche or 0
+            if fleche_type > 0 then
+                local f_prefixes = { "", "SNCF_Fleche", "SNCF_Fleche2", "SNCF_Fleche3", "SNCF_FlecheV" }
+                local f_prefix = f_prefixes[fleche_type + 1]
+                local f_pos = is_droite and "_dg" or "_gd"
+                local f_mast_map = { [0]="_l",[1]="_lh",[2]="_l",[3]="_lh",[4]="_lo",[5]="_loh",[6]="_loD",[7]="_lohD",[8]="_loD" }
+                local f_mast = f_mast_map[mast_idx]
+                if f_mast then
+                    table.insert(result.models, { 
+                        id = "SNCF_Asset_Model/" .. f_prefix .. f_pos .. f_mast .. ".mdl", 
+                        transf = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox,oy,oz, 1 } 
+                    })
                 end
             end
 
-            if current_mast.cage_mdl and draw_cage then
-                local lz_cage = base_z + (current_mast.z or 0)
-                local cage_x = 0
-                local cage_y = local_shift_y + extra_cage_y
-                
-                local matrice_cage = {
-                    c,  s, 0, 0,
-                   -s,  c, 0, 0,
-                    0,  0, 1, 0,
-                    ox + (cage_x * c - cage_y * s), oy + (cage_x * s + cage_y * c), oz + lz_cage, 1
-                }
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. current_mast.cage_mdl, transf = matrice_cage })
-            end
+            -- Aspects lumineux combinés (R60 + Jcli)
+            local is_combo_r60 = (display == "JAUNE_CLI" and force_ralent == 2)
+            local inhibition_jcli = (display == "JAUNE_CLI" and force_ralent == 1)
 
-            local is_combo_r60 = false
-            if display == "JAUNE_CLI" and force_ralent == 2 then
-                is_combo_r60 = true
-            end
-            
-            local inhibition_jcli = false
-            if display == "JAUNE_CLI" and force_ralent == 1 then
-                inhibition_jcli = true
-            end
-
-            -- AFFICHAGE DU SIGNAL PRINCIPAL
             if display == "ROUGE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
-                
             elseif display == "ROUGE_CLI" then
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Cli_Allume.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
-                
             elseif display == "VERT" then
-                if force_ralent == 1 or force_ralent == 2 then
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
-                else
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Allume.mdl", transf = matrice_feux })
-                end
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_" .. ((force_ralent==1 or force_ralent==2) and "Eteint" or "Allume") .. ".mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
-                
             elseif display == "JAUNE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
             elseif display == "JAUNE_CLI" then
-                if inhibition_jcli then
-                elseif is_combo_r60 then
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_R60_Jcli_Allume.mdl", transf = matrice_feux })
-                else
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Cli_Allume.mdl", transf = matrice_feux })
-                end
+                if not inhibition_jcli then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_" .. (is_combo_r60 and "R60_Jcli_Allume" or "Jaune_Cli_Allume") .. ".mdl", transf = matrice_feux }) end
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
             end
 
+            -- Affichage des feux de ralentissement (R)
             if force_ralent == 1 then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_r_droite })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_r_gauche })
             elseif force_ralent == 2 then
-                if not is_combo_r60 then
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_droite })
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_gauche })
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_R60_Allume.mdl", transf = matrice_r_droite })
-                else
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_droite })
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_gauche })
-                end 
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_droite })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_gauche })
+                if not is_combo_r60 then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_R60_Allume.mdl", transf = matrice_r_droite }) end
             else
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_droite })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_gauche })
             end
 
-            table.insert(result.groundFaces, {  
-                face = { { -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 } },
-                modes = { { type = "FILL", key = "industry_floor.lua" } },
-                loop = true,
-                alignmentOffsetMode = "OBJECT",
-                alignmentDirMode = "OBJECT",
-                alignmentOffset = { -2.0, -1.0 },
-            })
+            table.insert(result.groundFaces, { face = { { -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 } }, modes = { { type = "FILL", key = "industry_floor.lua" } }, loop = true, alignmentOffsetMode = "OBJECT", alignmentDirMode = "OBJECT", alignmentOffset = { -2.0, -1.0 } })
             table.insert(result.terrainAlignmentLists, { type = "EQUAL", faces =  { } })
-            
             return result
         end
     }

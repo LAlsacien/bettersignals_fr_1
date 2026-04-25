@@ -1,4 +1,7 @@
 function data()
+    -- =========================================================================
+    -- UTILITAIRES DE CONFIGURATION
+    -- =========================================================================
     local function intRange(start, stop, step)
         local a = {}
         local i = start
@@ -39,6 +42,12 @@ function data()
             {
                 key = "opt_jcli",
                 name = _("Activer le Jaune Clignotant"),
+                uiType = "CHECKBOX",
+                defaultIndex = 0,
+            },
+            {
+                key = "opt_vcli",
+                name = _("Activer la pré-annonce (Vert Clignotant)"),
                 uiType = "CHECKBOX",
                 defaultIndex = 0,
             },
@@ -118,16 +127,75 @@ function data()
                 terrainAlignmentLists = {}
             }
             
-            -- 1. LECTURE DES OPTIONS
-            local has_jcli = false
-            if params.opt_jcli and tonumber(params.opt_jcli) == 1 then has_jcli = true end
+            -- =========================================================================
+            -- 1. INITIALISATION DES VARIABLES
+            -- =========================================================================
+            local has_jcli = (params.opt_jcli == 1)
+            local has_vcli = (params.opt_vcli == 1)
+            local is_droite = (params.opt_pos == 1)
+            local opt_spec = params.opt_cible_spec or 0
+            local mast_idx = params.mast_type or 0
+            local opt_plaque = params.opt_plaque_id or 0
+            local fleche_type = params.add_fleche or 0
 
-            -- 2. LECTURE DES WAYPOINTS
+            -- Décalages utilisateurs
+            local ox = (params.offset_x or 10) - 10
+            local oy = (params.offset_y or 10) - 10
+            local oz = (params.offset_z or 10) - 10
+            local orot = ((params.offset_rot or 36) * 5) - 180
+
+            -- =========================================================================
+            -- 2. MOTEUR LOGIQUE (RADAR / LOOK-AHEAD)
+            -- =========================================================================
+            
+            -- 2a. Lecture des Waypoints (paramsOverride)
             local force_rcli = 0
-            if params.paramsOverride and params.paramsOverride.rcli then force_rcli = tonumber(params.paramsOverride.rcli) end
+            if params.paramsOverride and params.paramsOverride.rcli then 
+                force_rcli = tonumber(params.paramsOverride.rcli) 
+            end
 
-            -- 3. GESTION DES CANTONS
-            local isGreen = (params.signal_state and params.signal_state == 1)
+            -- Propagation du RCLI depuis le signal suivant (cascade)
+            if params.following_signal and params.following_signal.paramsOverride and params.following_signal.paramsOverride.rcli then
+                force_rcli = tonumber(params.following_signal.paramsOverride.rcli) + 1
+            end
+
+            -- 2b. Analyse de la vitesse du canton suivant
+            local next_is_ralent = false
+            local next_has_jcli = false
+
+            if params.following_signal then
+                -- Le signal suivant a-t-il le jaune clignotant actif ?
+                if params.following_signal.params and params.following_signal.params.opt_jcli then
+                    if tonumber(params.following_signal.params.opt_jcli) == 1 then
+                        next_has_jcli = true
+                    end
+                end
+
+                -- Analyse du signal N+2 pour le vert clignotant (pré-annonce)
+                if params.following_signal.following_signal then
+                    -- Vérification via paramsOverride (RR)
+                    if params.following_signal.following_signal.paramsOverride then
+                        local next_next_rr = tonumber(params.following_signal.following_signal.paramsOverride.rr) or 0
+                        if next_next_rr == 1 or next_next_rr == 2 then
+                            next_is_ralent = true
+                        end
+                    end
+
+                    -- Vérification via différentiel de vitesse (Signal_Speed)
+                    if not next_is_ralent and params.following_signal.following_signal.signal_speed then
+                        local speed_current = params.following_signal.signal_speed or 999
+                        local speed_next = params.following_signal.following_signal.signal_speed
+                        
+                        -- Si la vitesse chute brutalement (<= 60), on active la pré-annonce
+                        if speed_current > speed_next and speed_next > 0 and speed_next <= 60 then
+                            next_is_ralent = true
+                        end
+                    end
+                end
+            end
+
+            -- 2c. Calcul de la distance au premier rouge (Cantonnement)
+            local isGreen = (params.signal_state == 1)
             local dist_red = 99
 
             if not isGreen then 
@@ -144,7 +212,7 @@ function data()
                 end
             end
 
-            -- 4. SÉQUENCES DE SIGNALISATION
+            -- 2d. Détermination de l'état lumineux (Display)
             local display = "VERT"
             
             if dist_red == 0 then 
@@ -158,83 +226,49 @@ function data()
                 end
                 
             elseif dist_red == 2 then
-                if force_rcli == 2 then 
+                if force_rcli == 2 then
                     display = "JAUNE"
                 elseif has_jcli then 
-                    display = "JAUNE_CLI" 
+                    display = "JAUNE_CLI"
+                elseif has_vcli then
+                    display = "VERT_CLI"
                 else 
                     display = "VERT" 
                 end
                 
             elseif dist_red >= 3 then 
-                display = "VERT" 
-            end
+                local target_is_jcli = (dist_red == 3 and next_has_jcli)
 
-            local cible_mdl = "Z_Cible_Type_A.mdl"
-            local opt_spec = params.opt_cible_spec or 0
-            
-            local hide_jaune = false
-            local offset_z_rouge = 0.0
-
-            if opt_spec == 1 then 
-                cible_mdl = "Z_Cible_Type_A_SA.mdl"
-                hide_jaune = true
-                offset_z_rouge = -0.22
-                
-                if display == "JAUNE" or display == "JAUNE_CLI" then
-                    display = "VERT"
+                -- Gestion de la pré-annonce (Vert Clignotant) si ralentissement ou Jcli devant
+                if has_vcli and (target_is_jcli or next_is_ralent) then
+                    display = "VERT_CLI"
                 end
             end
 
-            local mast_idx = params.mast_type or 0
+            -- =========================================================================
+            -- 3. MOTEUR GÉOMÉTRIQUE (MATRICES)
+            -- =========================================================================
+            
+            -- Config des mâts (Positionnement relatif des cibles et plaques)
             local mast_config = {
                 [0] = { mdl = "Z_Base_M_simple.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0,     pz = 0 }, 
-                [1] = { mdl = "Z_Base_M_simple_haut.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0,     pz = 0 },
-                [2] = { mdl = "Z_Base_M_leger.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0,     pz = 0 },
-                [3] = { mdl = "Z_Base_M_leger_haut.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0,     pz = 0 },
-                [4] = { mdl = "Z_Base_M_leger_dra.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0.425, pz = 0 },
-                [5] = { mdl = "Z_Base_M_leger_haut_dra.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.425, pz = 0 },
-                [6] = { mdl = "Z_Base_M_lourd.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0.2,   pz = 0 },
-                [7] = { mdl = "Z_Base_M_lourd_haut.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.2,   pz = 0 },
-                [8] = { mdl = "Z_Base_M_lourd_dra.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0.64,  pz = 0 },
-                [9] = { mdl = "Z_Base_M_lourd_haut_dra.mdl",         x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.64,  pz = 0 },
+                [1] = { mdl = "Z_Base_M_simple_haut.mdl",    x = 0,     y = 0,     z = 1.860, px = 0,    py = 0,     pz = 0 },
+                [2] = { mdl = "Z_Base_M_leger.mdl",          x = 0,     y = 0,     z = 0,     px = 0,    py = 0,     pz = 0 },
+                [3] = { mdl = "Z_Base_M_leger_haut.mdl",     x = 0,     y = 0,     z = 1.860, px = 0,    py = 0,     pz = 0 },
+                [4] = { mdl = "Z_Base_M_leger_dra.mdl",      x = 0,     y = 0,     z = 0,     px = 0,    py = 0.425, pz = 0 },
+                [5] = { mdl = "Z_Base_M_leger_haut_dra.mdl", x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.425, pz = 0 },
+                [6] = { mdl = "Z_Base_M_lourd.mdl",          x = 0,     y = 0,     z = 0,     px = 0,    py = 0.2,   pz = 0 },
+                [7] = { mdl = "Z_Base_M_lourd_haut.mdl",     x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.2,   pz = 0 },
+                [8] = { mdl = "Z_Base_M_lourd_dra.mdl",      x = 0,     y = 0,     z = 0,     px = 0,    py = 0.64,  pz = 0 },
+                [9] = { mdl = "Z_Base_M_lourd_haut_dra.mdl", x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.64,  pz = 0 },
                 [10]= { mdl = "Z_Base_M_nacelle_moderne.mdl", x = -0.15, y = -1.35, z = 3.205, px = 0,    py = 0,     pz = 0 }
             }
             local current_mast = mast_config[mast_idx] or mast_config[0]
+            local is_nacelle = (string.find(current_mast.mdl, "nacelle") ~= nil)
 
-            local opt_plaque = params.opt_plaque_id or 0
-            local final_plaque = ""
-
-            if mast_idx == 10 then
-                if opt_plaque == 1 then
-                    final_plaque = "Z_Plaque_Nacelle_Type_A_BM.mdl"
-                elseif opt_plaque == 2 then
-                    final_plaque = "Z_Plaque_Nacelle_Type_A_PR.mdl"
-                else
-                    final_plaque = "Z_Plaque_Nacelle_Type_A_BAL.mdl" 
-                end
-            else
-                if opt_plaque == 1 then
-                    final_plaque = "Z_Plaque_Type_A_BM.mdl"
-                elseif opt_plaque == 2 then
-                    final_plaque = "Z_Plaque_Type_A_PR.mdl"
-                else
-                    final_plaque = "Z_Plaque_Type_A_BAL.mdl" 
-                end
-            end
-            -- ==========================================
-
-            local base_z = 1.05
-            local ox = (params.offset_x or 10) - 10
-            local oy = (params.offset_y or 10) - 10
-            local oz = (params.offset_z or 10) - 10
-            local orot = ((params.offset_rot or 36) * 5) - 180
-
-            local is_droite = (params.opt_pos and params.opt_pos == 1)
-            local is_nacelle = (current_mast.mdl and string.find(current_mast.mdl, "nacelle")) ~= nil
-            
+            -- Calcul du shift Y (Inversion de polarité Alsace-Moselle / Gauche-Droite)
             local local_shift_y = 0 
-            local final_mast_mdl = current_mast.mdl -- On prépare la variable du nom du mât
+            local final_mast_mdl = current_mast.mdl
             
             if is_droite then
                 if is_nacelle then
@@ -245,15 +279,14 @@ function data()
                 end
             end
 
+            -- Préparation des sinus/cosinus pour la rotation utilisateur
             local rad = math.rad(orot)
             local c = math.cos(rad)
             local s = math.sin(rad)
+            local base_z = 1.05
 
-            local mast_local_y = 0
-            if is_droite then
-                mast_local_y = local_shift_y
-            end
-            
+            -- 3a. Matrice du Mât
+            local mast_local_y = is_droite and local_shift_y or 0
             local matrice_mat = {
                 c,  s, 0, 0,
                -s,  c, 0, 0,
@@ -261,6 +294,7 @@ function data()
                 ox + (0 * c - mast_local_y * s), oy + (0 * s + mast_local_y * c), oz + base_z, 1
             }
 
+            -- 3b. Matrice des Cibles/Feux (suit le sommet du mât)
             local lx = current_mast.x or 0
             local ly = (current_mast.y or 0) + local_shift_y
             local lz = base_z + (current_mast.z or 0)
@@ -272,6 +306,8 @@ function data()
                 ox + (lx * c - ly * s), oy + (lx * s + ly * c), oz + lz, 1
             }
 
+            -- Correction spécifique pour Cible Sans Avertissement (Décalage du rouge)
+            local offset_z_rouge = (opt_spec == 1) and -0.22 or 0.0
             local matrice_feux_rouge = {
                 c,  s, 0, 0,
                -s,  c, 0, 0,
@@ -279,8 +315,10 @@ function data()
                 ox + (lx * c - ly * s), oy + (lx * s + ly * c), oz + lz + offset_z_rouge, 1
             }
 
+            -- 3c. Matrice de la Plaque d'identification
             local px = current_mast.px or 0
             local py = current_mast.py or 0
+            -- Sanctuarisation : Inversion de polarité pour le décalage Y des plaques sur mât drapeau
             if is_droite and not is_nacelle then
                 py = -py
             end
@@ -294,76 +332,82 @@ function data()
                 ox + (px * c - py * s), oy + (px * s + py * c), oz + pz, 1
             }
 
-             local f_type = params.add_fleche or 0
-            
-            if f_type > 0 then
-                local matrice_fleche = {
-                    c,  s, 0, 0,
-                   -s,  c, 0, 0,
-                    0,  0, 1, 0,
-                    ox, oy, oz, 1
-                }
+            -- =========================================================================
+            -- 4. ASSEMBLAGE DES MODÈLES (ASSEMBLER)
+            -- =========================================================================
 
-                local f_prefixes = { "", "SNCF_Fleche", "SNCF_Fleche2", "SNCF_Fleche3", "SNCF_FlecheV" }
-                local f_prefix = f_prefixes[f_type + 1]
-                
-                local f_pos = is_droite and "_dg" or "_gd"
-                
-                local f_mast_map = {
-                    [0] = "_s",   -- Simple
-                    [1] = "_sh",  -- Simple Haut
-                    [2] = "_l",   -- Léger
-                    [3] = "_lh",  -- Léger Haut
-                    [4] = "_l",   -- Léger & Drapeau
-                    [5] = "_lh",  -- Léger Haut & Drapeau
-                    [6] = "_lo",  -- Lourd
-                    [7] = "_loh", -- Lourd Haut
-                    [8] = "_loD", -- Lourd & Drapeau
-                    [9] = "_lohD" -- Lourd Haut & Drapeau
-                }
-                
-                local f_mast = f_mast_map[mast_idx]
-                
-                if f_mast then
-                    local fleche_mdl = f_prefix .. f_pos .. f_mast .. ".mdl"
-                    table.insert(result.models, { id = "SNCF_Asset_Model/" .. fleche_mdl, transf = matrice_fleche })
-                end
+            -- 4a. Mât, Cible et Plaque
+            local cible_mdl = (opt_spec == 1) and "Z_Cible_Type_A_SA.mdl" or "Z_Cible_Type_A.mdl"
+            local hide_jaune = (opt_spec == 1)
+
+            local plaque_mdl = ""
+            if is_nacelle then
+                if opt_plaque == 1 then plaque_mdl = "Z_Plaque_Nacelle_Type_A_BM.mdl"
+                elseif opt_plaque == 2 then plaque_mdl = "Z_Plaque_Nacelle_Type_A_PR.mdl"
+                else plaque_mdl = "Z_Plaque_Nacelle_Type_A_BAL.mdl" end
+            else
+                if opt_plaque == 1 then plaque_mdl = "Z_Plaque_Type_A_BM.mdl"
+                elseif opt_plaque == 2 then plaque_mdl = "Z_Plaque_Type_A_PR.mdl"
+                else plaque_mdl = "Z_Plaque_Type_A_BAL.mdl" end
             end
 
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. final_mast_mdl, transf = matrice_mat })
             table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. cible_mdl, transf = matrice_feux })
-            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. final_plaque, transf = matrice_plaque })
+            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. plaque_mdl, transf = matrice_plaque })
 
+            -- 4b. Flèche de direction
+            if fleche_type > 0 then
+                local f_prefixes = { "", "SNCF_Fleche", "SNCF_Fleche2", "SNCF_Fleche3", "SNCF_FlecheV" }
+                local f_prefix = f_prefixes[fleche_type + 1]
+                local f_pos = is_droite and "_dg" or "_gd"
+                local f_mast_map = {
+                    [0]="_s",[1]="_sh",[2]="_l",[3]="_lh",[4]="_l",[5]="_lh",[6]="_lo",[7]="_loh",[8]="_loD",[9]="_lohD"
+                }
+                local f_mast = f_mast_map[mast_idx]
+                if f_mast then
+                    table.insert(result.models, { 
+                        id = "SNCF_Asset_Model/" .. f_prefix .. f_pos .. f_mast .. ".mdl", 
+                        transf = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox,oy,oz, 1 } 
+                    })
+                end
+            end
+
+            -- 4c. Affichage des Feux (États)
             if display == "ROUGE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux_rouge })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
-                if not hide_jaune then
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
-                end
+                if not hide_jaune then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux }) end
+            
             elseif display == "JAUNE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_rouge })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+            
             elseif display == "JAUNE_CLI" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Cli_Allume.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux }) 
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_rouge })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+            
             elseif display == "ROUGE_CLI" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Cli_Allume.mdl", transf = matrice_feux_rouge })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_rouge })
-                if not hide_jaune then
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
-                end
+                if not hide_jaune then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux }) end
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+            
             elseif display == "VERT" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Allume.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_rouge })
-                if not hide_jaune then
-                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
-                end
+                if not hide_jaune then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux }) end
+            
+            elseif display == "VERT_CLI" then
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Cli_Allume.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+                if not hide_jaune then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux }) end
             end
 
+            -- Interface au sol
             table.insert(result.groundFaces, {  
                 face = { { -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 } },
                 modes = { { type = "FILL", key = "industry_floor.lua" } },
