@@ -1,7 +1,16 @@
 function data()
 return {
-	boundingInfo = { bbMax = { 5, 5, 5, }, bbMin = { -5, -5, -5, }, },
-	collider = { params = { halfExtents = { 1, 1, 1, }, }, transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, }, type = "BOX", },
+	boundingInfo = {
+		bbMax = { 3.4500000476837, 3.2999999523163, 3.3499999046326, },
+		bbMin = { 2.9500000476837, 2.7000000476837, 2.7999999523163, },
+	},
+	collider = {
+		params = {
+			halfExtents = { 1, 1, 1, },
+		},
+		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+		type = "BOX",
+	},
 	lods = {
 		{
 			node = {
@@ -22,9 +31,11 @@ return {
 				name = "RootNode",
 				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 			},
-			static = false, visibleFrom = 0, visibleTo = 85,
+			static = false,
+			visibleFrom = 0,
+			visibleTo = 85,
 		},
-		{ -- LOD 1
+		{
 			node = {
 				children = {
 					{
@@ -37,9 +48,12 @@ return {
 				name = "RootNode",
 				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 			},
-			static = false, visibleFrom = 85, visibleTo = 150,
+			static = false,
+			visibleFrom = 85,
+			visibleTo = 150,
 		},
 	},
-	metadata = { }, version = 1,
+	metadata = { },
+	version = 1,
 }
 end

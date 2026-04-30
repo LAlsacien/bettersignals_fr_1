@@ -40,14 +40,14 @@ function data()
         order = 11111,
         params = {
             {
-                key = "opt_jcli",
-                name = _("Activer le Jaune Clignotant"),
+                key = "opt_vcli",
+                name = _("Activer la pré-annonce (Vert Clignotant)"),
                 uiType = "CHECKBOX",
                 defaultIndex = 0,
             },
             {
-                key = "opt_vcli",
-                name = _("Activer la pré-annonce (Vert Clignotant)"),
+                key = "opt_jcli",
+                name = _("Activer le Jaune Clignotant"),
                 uiType = "CHECKBOX",
                 defaultIndex = 0,
             },
@@ -148,15 +148,18 @@ function data()
             -- 2. MOTEUR LOGIQUE (RADAR / LOOK-AHEAD)
             -- =========================================================================
             
-            -- 2a. Lecture des Waypoints (paramsOverride)
             local force_rcli = 0
-            if params.paramsOverride and params.paramsOverride.rcli then 
-                force_rcli = tonumber(params.paramsOverride.rcli) 
-            end
 
-            -- Propagation du RCLI depuis le signal suivant (cascade)
-            if params.following_signal and params.following_signal.paramsOverride and params.following_signal.paramsOverride.rcli then
-                force_rcli = tonumber(params.following_signal.paramsOverride.rcli) + 1
+            if params.paramsOverride and params.paramsOverride.rcli then
+                force_rcli = 1
+            elseif params.following_signal then
+                if params.following_signal.paramsOverride and params.following_signal.paramsOverride.rcli then
+                    force_rcli = 2
+                elseif params.following_signal.following_signal and params.following_signal.following_signal.paramsOverride and params.following_signal.following_signal.paramsOverride.rcli then
+                    force_rcli = 3
+                elseif params.following_signal.following_signal and params.following_signal.following_signal.following_signal and params.following_signal.following_signal.following_signal.paramsOverride and params.following_signal.following_signal.following_signal.paramsOverride.rcli then
+                    force_rcli = 4
+                end
             end
 
             -- 2b. Analyse de la vitesse du canton suivant
@@ -164,16 +167,13 @@ function data()
             local next_has_jcli = false
 
             if params.following_signal then
-                -- Le signal suivant a-t-il le jaune clignotant actif ?
-                if params.following_signal.params and params.following_signal.params.opt_jcli then
-                    if tonumber(params.following_signal.params.opt_jcli) == 1 then
+                if params.following_signal.construction_params and params.following_signal.construction_params.opt_jcli then
+                    if tonumber(params.following_signal.construction_params.opt_jcli) == 1 then
                         next_has_jcli = true
                     end
                 end
 
-                -- Analyse du signal N+2 pour le vert clignotant (pré-annonce)
                 if params.following_signal.following_signal then
-                    -- Vérification via paramsOverride (RR)
                     if params.following_signal.following_signal.paramsOverride then
                         local next_next_rr = tonumber(params.following_signal.following_signal.paramsOverride.rr) or 0
                         if next_next_rr == 1 or next_next_rr == 2 then
@@ -194,54 +194,71 @@ function data()
                 end
             end
 
-            -- 2c. Calcul de la distance au premier rouge (Cantonnement)
-            local isGreen = (params.signal_state == 1)
+            local isGreen = (params.signal_state and params.signal_state == 1)
             local dist_red = 99
-
-            if not isGreen then 
-                dist_red = 0
+            if not isGreen then dist_red = 0
             elseif params.following_signal then
-                if params.following_signal.signal_state == 0 then 
-                    dist_red = 1
+                if params.following_signal.signal_state == 0 then dist_red = 1
                 elseif params.following_signal.following_signal then
-                    if params.following_signal.following_signal.signal_state == 0 then 
-                        dist_red = 2
-                    elseif params.following_signal.following_signal.following_signal and params.following_signal.following_signal.following_signal.signal_state == 0 then 
-                        dist_red = 3
+                    if params.following_signal.following_signal.signal_state == 0 then dist_red = 2
+                    elseif params.following_signal.following_signal.following_signal then
+                        if params.following_signal.following_signal.following_signal.signal_state == 0 then dist_red = 3
+                        elseif params.following_signal.following_signal.following_signal.following_signal then
+                            if params.following_signal.following_signal.following_signal.following_signal.signal_state == 0 then dist_red = 4 end
+                        end
                     end
                 end
             end
 
-            -- 2d. Détermination de l'état lumineux (Display)
             local display = "VERT"
             
             if dist_red == 0 then 
-                display = "ROUGE" 
+                display = "ROUGE"
                 
             elseif dist_red == 1 then 
-                if force_rcli == 1 then 
-                    display = "ROUGE_CLI" 
-                else 
-                    display = "JAUNE" 
-                end
+                if force_rcli == 1 then
+                        display = "ROUGE_CLI"
+                    else
+                        display = "JAUNE"
+                    end
                 
             elseif dist_red == 2 then
                 if force_rcli == 2 then
                     display = "JAUNE"
-                elseif has_jcli then 
+                elseif has_jcli then
                     display = "JAUNE_CLI"
-                elseif has_vcli then
+                elseif has_vcli and not has_jcli then
                     display = "VERT_CLI"
                 else 
                     display = "VERT" 
                 end
                 
-            elseif dist_red >= 3 then 
-                local target_is_jcli = (dist_red == 3 and next_has_jcli)
-
-                -- Gestion de la pré-annonce (Vert Clignotant) si ralentissement ou Jcli devant
-                if has_vcli and (target_is_jcli or next_is_ralent) then
-                    display = "VERT_CLI"
+            elseif dist_red == 3 then
+                if force_rcli == 3 then
+                    if has_jcli then
+                        display = "JAUNE_CLI"
+                    elseif has_vcli then
+                        display = "VERT_CLI"
+                    else
+                        display = "VERT"
+                    end
+                else
+                    if has_vcli and (next_has_jcli or next_is_ralent) then
+                        display = "VERT_CLI"
+                    else
+                        display = "VERT"
+                    end
+                end
+                
+            elseif dist_red >= 4 then
+                if force_rcli == 4 then
+                    if has_vcli and next_has_jcli then
+                        display = "VERT_CLI"
+                    else
+                        display = "VERT"
+                    end
+                else
+                    display = "VERT"
                 end
             end
 

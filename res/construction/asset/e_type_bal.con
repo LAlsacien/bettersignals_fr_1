@@ -35,6 +35,12 @@ function data()
         order = 11114,
         params = {
             {
+                key = "opt_vcli",
+                name = _("Activer la pré-annonce (Vert Clignotant)"),
+                uiType = "CHECKBOX",
+                defaultIndex = 0,
+            },
+            {
                 key = "opt_jcli",
                 name = _("Activer le Jaune Clignotant"),
                 uiType = "CHECKBOX",
@@ -89,6 +95,7 @@ function data()
             -- 1. INITIALISATION ET PARAMÈTRES UI
             -- =========================================================================
             local has_jcli = (params.opt_jcli == 1)
+            local has_vcli = (params.opt_vcli == 1)
             local is_droite = (params.opt_pos == 1)
             local mast_idx = params.mast_type or 0
             
@@ -100,8 +107,51 @@ function data()
             -- =========================================================================
             -- 2. MOTEUR LOGIQUE (RADAR / RALENTISSEMENT)
             -- =========================================================================
-            local force_rcli = (params.paramsOverride and params.paramsOverride.rcli) and tonumber(params.paramsOverride.rcli) or 0
+            local force_rcli = 0
+
+             if params.paramsOverride and params.paramsOverride.rcli then
+                force_rcli = 1
+            elseif params.following_signal then
+                if params.following_signal.paramsOverride and params.following_signal.paramsOverride.rcli then
+                    force_rcli = 2
+                elseif params.following_signal.following_signal and params.following_signal.following_signal.paramsOverride and params.following_signal.following_signal.paramsOverride.rcli then
+                    force_rcli = 3
+                elseif params.following_signal.following_signal and params.following_signal.following_signal.following_signal and params.following_signal.following_signal.following_signal.paramsOverride and params.following_signal.following_signal.following_signal.paramsOverride.rcli then
+                    force_rcli = 4
+                end
+            end
             
+            local next_is_ralent = false
+            local next_has_jcli = false
+
+            if params.following_signal then
+                if params.following_signal.construction_params and params.following_signal.construction_params.opt_jcli then
+                    if tonumber(params.following_signal.construction_params.opt_jcli) == 1 then
+                        next_has_jcli = true
+                    end
+                end
+
+                if params.following_signal.following_signal then
+                    if params.following_signal.following_signal.paramsOverride then
+                        local next_next_rr = tonumber(params.following_signal.following_signal.paramsOverride.rr) or 0
+                        if next_next_rr == 1 or next_next_rr == 2 then
+                            next_is_ralent = true
+                        end
+                    end
+
+                    -- Vérification via différentiel de vitesse (Signal_Speed)
+                    if not next_is_ralent and params.following_signal.following_signal.signal_speed then
+                        local speed_current = params.following_signal.signal_speed or 999
+                        local speed_next = params.following_signal.following_signal.signal_speed
+                        
+                        -- Si la vitesse chute brutalement (<= 60), on active la pré-annonce
+                        if speed_current > speed_next and speed_next > 0 and speed_next <= 60 then
+                            next_is_ralent = true
+                        end
+                    end
+                end
+            end
+
             -- Détection du waypoint/signal suivant
             local wp_rr_next = 0
             if params.following_signal and params.following_signal.paramsOverride and params.following_signal.paramsOverride.rr then
@@ -124,23 +174,76 @@ function data()
             elseif wp_rr_next == 4 and force_ralent == 2 then force_ralent = 0
             elseif wp_rr_next == 5 then force_ralent = 0 end
 
-            local isGreen = (params.signal_state == 1)
+            local isGreen = (params.signal_state and params.signal_state == 1)
             local dist_red = 99
             if not isGreen then dist_red = 0
             elseif params.following_signal then
                 if params.following_signal.signal_state == 0 then dist_red = 1
                 elseif params.following_signal.following_signal then
                     if params.following_signal.following_signal.signal_state == 0 then dist_red = 2
-                    elseif params.following_signal.following_signal.following_signal and params.following_signal.following_signal.following_signal.signal_state == 0 then dist_red = 3 end
+                    elseif params.following_signal.following_signal.following_signal then
+                        if params.following_signal.following_signal.following_signal.signal_state == 0 then dist_red = 3
+                        elseif params.following_signal.following_signal.following_signal.following_signal then
+                            if params.following_signal.following_signal.following_signal.following_signal.signal_state == 0 then dist_red = 4 end
+                        end
+                    end
                 end
             end
 
             local display = "VERT"
-            if dist_red == 0 then display = "ROUGE" 
-            elseif dist_red == 1 then display = (force_rcli == 1) and "ROUGE_CLI" or "JAUNE"
-            elseif dist_red == 2 then display = (force_rcli == 2) and "JAUNE" or (has_jcli and "JAUNE_CLI" or "VERT") end
+            
+            if dist_red == 0 then 
+                display = "ROUGE" 
+                
+            elseif dist_red == 1 then 
+                if force_rcli == 1 then 
+                    display = "ROUGE_CLI" 
+                else 
+                    display = "JAUNE" 
+                end
+                
+            elseif dist_red == 2 then
+                if force_rcli == 2 then 
+                    display = "JAUNE"
+                elseif has_jcli then 
+                    display = "JAUNE_CLI"
+                elseif has_vcli and not has_jcli then
+                    display = "VERT_CLI"
+                else 
+                    display = "VERT"
+                end
+                
+            elseif dist_red == 3 then
+                if force_rcli == 3 then
+                    if has_jcli then
+                        display = "JAUNE_CLI"
+                    elseif has_vcli then
+                        display = "VERT_CLI"
+                    else
+                        display = "VERT"
+                    end
+                else
+                    if has_vcli and (next_has_jcli or next_is_ralent) then
+                        display = "VERT_CLI"
+                    else
+                        display = "VERT"
+                    end
+                end
+                
+            elseif dist_red >= 4 then
+                if force_rcli == 4 then
+                    if has_vcli and next_has_jcli then
+                        display = "VERT_CLI"
+                    else
+                        display = "VERT"
+                    end
+                else
+                    display = "VERT"
+                end
+            end
 
-            if display == "ROUGE" or display == "ROUGE_CLI" or display == "JAUNE" then force_ralent = 0 end
+            if display == "CARRE" or display == "ROUGE_CLI" then force_ralent = 0 end
+            if display == "JAUNE" then force_ralent = 0 end
 
             -- =========================================================================
             -- 3. MOTEUR GÉOMÉTRIQUE (MATRICES)
@@ -221,6 +324,7 @@ function data()
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Cli_Allume.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
             elseif display == "VERT" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_" .. ((force_ralent==1 or force_ralent==2) and "Eteint" or "Allume") .. ".mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
@@ -231,6 +335,11 @@ function data()
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
             elseif display == "JAUNE_CLI" then
                 if not inhibition_jcli then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_" .. (is_combo_r60 and "R60_Jcli_Allume" or "Jaune_Cli_Allume") .. ".mdl", transf = matrice_feux }) end
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+            elseif display == "VERT_CLI" then
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_" .. ((force_ralent==1 or force_ralent==2) and "Eteint" or "Cli_Allume") .. ".mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })

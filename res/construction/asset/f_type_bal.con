@@ -42,6 +42,12 @@ function data()
                 defaultIndex = 0,
             },
             {
+                key = "opt_vcli",
+                name = _("Activer la pré-annonce (Vert Clignotant)"),
+                uiType = "CHECKBOX",
+                defaultIndex = 0,
+            },
+            {
                 key = "opt_jcli",
                 name = _("Activer le Jaune Clignotant"),
                 uiType = "CHECKBOX",
@@ -138,6 +144,7 @@ function data()
             -- 1. INITIALISATION ET PARAMÈTRES UI
             -- =========================================================================
             local has_jcli = (params.opt_jcli == 1)
+            local has_vcli = (params.opt_vcli == 1)
             local is_droite = (params.opt_pos == 1)
             local is_circ_droite = (params.opt_sens == 1)
             local swap_tecs_tscs = is_circ_droite
@@ -156,8 +163,51 @@ function data()
             -- =========================================================================
             -- 2. MOTEUR LOGIQUE
             -- =========================================================================
-            local force_rcli = (params.paramsOverride and params.paramsOverride.rcli) and tonumber(params.paramsOverride.rcli) or 0
+            local force_rcli = 0
+
+             if params.paramsOverride and params.paramsOverride.rcli then
+                force_rcli = 1
+            elseif params.following_signal then
+                if params.following_signal.paramsOverride and params.following_signal.paramsOverride.rcli then
+                    force_rcli = 2
+                elseif params.following_signal.following_signal and params.following_signal.following_signal.paramsOverride and params.following_signal.following_signal.paramsOverride.rcli then
+                    force_rcli = 3
+                elseif params.following_signal.following_signal and params.following_signal.following_signal.following_signal and params.following_signal.following_signal.following_signal.paramsOverride and params.following_signal.following_signal.following_signal.paramsOverride.rcli then
+                    force_rcli = 4
+                end
+            end
             
+            local next_is_ralent = false
+            local next_has_jcli = false
+
+            if params.following_signal then
+                if params.following_signal.construction_params and params.following_signal.construction_params.opt_jcli then
+                    if tonumber(params.following_signal.construction_params.opt_jcli) == 1 then
+                        next_has_jcli = true
+                    end
+                end
+
+                if params.following_signal.following_signal then
+                    if params.following_signal.following_signal.paramsOverride then
+                        local next_next_rr = tonumber(params.following_signal.following_signal.paramsOverride.rr) or 0
+                        if next_next_rr == 1 or next_next_rr == 2 then
+                            next_is_ralent = true
+                        end
+                    end
+
+                    -- Vérification via différentiel de vitesse (Signal_Speed)
+                    if not next_is_ralent and params.following_signal.following_signal.signal_speed then
+                        local speed_current = params.following_signal.signal_speed or 999
+                        local speed_next = params.following_signal.following_signal.signal_speed
+                        
+                        -- Si la vitesse chute brutalement (<= 60), on active la pré-annonce
+                        if speed_current > speed_next and speed_next > 0 and speed_next <= 60 then
+                            next_is_ralent = true
+                        end
+                    end
+                end
+            end
+
             local wp_rr_next = 0
             if params.following_signal and params.following_signal.paramsOverride and params.following_signal.paramsOverride.rr then
                 wp_rr_next = tonumber(params.following_signal.paramsOverride.rr) or 0
@@ -177,30 +227,75 @@ function data()
             elseif wp_rr_next == 4 and force_ralent == 2 then force_ralent = 0
             elseif wp_rr_next == 5 then force_ralent = 0 end
 
-            local rr_state = 0
-            local speed_ahead = params.signal_speed or 999
-            local speed_prev = params.previous_speed or 999
-            if speed_prev > speed_ahead then
-                if speed_ahead > 0 and speed_ahead <= 30 then rr_state = 1 elseif speed_ahead > 30 and speed_ahead <= 60 then rr_state = 2 end
-            end
-
-            local isGreen = (params.signal_state == 1)
+            local isGreen = (params.signal_state and params.signal_state == 1)
             local dist_red = 99
             if not isGreen then dist_red = 0
             elseif params.following_signal then
                 if params.following_signal.signal_state == 0 then dist_red = 1
                 elseif params.following_signal.following_signal then
                     if params.following_signal.following_signal.signal_state == 0 then dist_red = 2
-                    elseif params.following_signal.following_signal.following_signal and params.following_signal.following_signal.following_signal.signal_state == 0 then dist_red = 3 end
+                    elseif params.following_signal.following_signal.following_signal then
+                        if params.following_signal.following_signal.following_signal.signal_state == 0 then dist_red = 3
+                        elseif params.following_signal.following_signal.following_signal.following_signal then
+                            if params.following_signal.following_signal.following_signal.following_signal.signal_state == 0 then dist_red = 4 end
+                        end
+                    end
                 end
             end
 
             local display = "VERT"
-            if dist_red == 0 then display = "CARRE" 
-            elseif dist_red == 1 then display = (force_rcli == 1) and "ROUGE_CLI" or "JAUNE"
-            elseif dist_red == 2 then display = (force_rcli == 2) and "JAUNE" or (has_jcli and "JAUNE_CLI" or "VERT") end
+            
+            if dist_red == 0 then 
+                display = "CARRE" 
+                
+            elseif dist_red == 1 then 
+                if force_rcli == 1 then 
+                    display = "ROUGE_CLI" 
+                else 
+                    display = "JAUNE" 
+                end
+                
+            elseif dist_red == 2 then
+                if force_rcli == 2 then 
+                    display = "JAUNE"
+                elseif has_jcli then 
+                    display = "JAUNE_CLI"
+                elseif has_vcli and not has_jcli then
+                    display = "VERT_CLI"
+                else 
+                    display = "VERT"
+                end
+                
+            elseif dist_red == 3 then
+                if force_rcli == 3 then
+                    if has_jcli then
+                        display = "JAUNE_CLI"
+                    elseif has_vcli then
+                        display = "VERT_CLI"
+                    else
+                        display = "VERT"
+                    end
+                else
+                    if has_vcli and (next_has_jcli or next_is_ralent) then
+                        display = "VERT_CLI"
+                    else
+                        display = "VERT"
+                    end
+                end
+                
+            elseif dist_red >= 4 then
+                if force_rcli == 4 then
+                    if has_vcli and next_has_jcli then
+                        display = "VERT_CLI"
+                    else
+                        display = "VERT"
+                    end
+                else
+                    display = "VERT"
+                end
+            end
 
-            if display == "CARRE" or display == "ROUGE_CLI" then rr_state = 0; force_ralent = 0 end
+            if display == "CARRE" or display == "ROUGE_CLI" then force_ralent = 0 end
             if display == "JAUNE" then force_ralent = 0 end
 
             -- =========================================================================
@@ -232,6 +327,10 @@ function data()
             local lx = current_mast.x or 0; local ly = (current_mast.y or 0) + local_shift_y; local lz = base_z + (current_mast.z or 0)
             local matrice_feux = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+lz, 1 }
             local matrice_feux_haut = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+lz+0.66, 1 }
+
+            local lz_r = lz + 1.10
+            local matrice_r_droite = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+lz_r, 1 }
+            local matrice_r_gauche = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-(ly-0.6)*s), oy+(lx*s+(ly-0.6)*c), oz+lz_r, 1 }
 
             local o_x, o_y, o_rot = current_mast.o_x or 0, current_mast.o_y or 0, current_mast.o_rot or 0
             local raw_oz = current_mast.o_z or 0
@@ -361,23 +460,42 @@ function data()
             end
 
             -- Aspects principaux (Harmonisation Inhibition)
-            local inhibe_vert = (rr_state > 0 or force_ralent > 0)
-            local inhibe_jcli = (rr_state == 1 or force_ralent == 1)
+            local inhibe_vert = force_ralent > 0
+            local inhibe_jcli = force_ralent == 1
             local is_combo_r60 = (display == "JAUNE_CLI" and force_ralent == 2)
             if display == "CARRE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux_haut }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Eteint.mdl", transf = matrice_oeilleton })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
             elseif display == "ROUGE_CLI" then
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Cli_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Cli_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
             elseif display == "VERT" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_" .. (inhibe_vert and "Eteint" or "Allume") .. ".mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
             elseif display == "JAUNE_CLI" then
                 local cli_mdl = inhibe_jcli and "Z_L_Feu_Jaune_Eteint.mdl" or "Z_L_Feu_Jaune_Cli_Allume.mdl"
                 if is_combo_r60 then cli_mdl = "Z_L_Feu_R60_Jcli_Allume.mdl" end
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. cli_mdl, transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. cli_mdl, transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
             elseif display == "JAUNE" then
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+            elseif display == "VERT_CLI" then
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_" .. (inhibe_vert and "Eteint" or "Cli_Allume") .. ".mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
+            end
+
+            if force_ralent == 1 then
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_r_droite })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_r_gauche })
+            elseif force_ralent == 2 then
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_droite })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_gauche })
+                if not is_combo_r60 then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_R60_Allume.mdl", transf = matrice_r_droite }) end
+            else
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_droite })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_r_gauche })
             end
 
             table.insert(result.groundFaces, { face = { { -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 } }, modes = { { type = "FILL", key = "industry_floor.lua" } }, loop = true, alignmentOffsetMode = "OBJECT", alignmentDirMode = "OBJECT", alignmentOffset = { -2.0, -1.0 } })

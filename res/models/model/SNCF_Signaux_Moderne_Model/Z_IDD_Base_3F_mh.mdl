@@ -1,25 +1,27 @@
 function data()
 return {
 	boundingInfo = {
-		bbMax = { 3.6000542640686, 2.968324136734, 5.95002704620361, },
-		bbMin = { 2.440173149109, 1.8859797000885, 2.941633939743, },
+		bbMax = { 3.6000542640686, 2.9683241844177, 7.9000000953674, },
+		bbMin = { 2.4401731491089, 1.8859796524048, 4.8000001907349, },
 	},
 	collider = {
-		params = { halfExtents = { 0.40301847457886, 0.34117221832275, 1.2293182611465, }, },
+		params = {
+			halfExtents = { 0.40301847457886, 0.34117221832275, 1.2293182611465, },
+		},
 		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 		type = "BOX",
 	},
 	lods = {
-		{ -- LOD 0
+		{
 			node = {
 				children = {
-					{ -- La Cible
+					{
 						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Cible_Moderne.mtl", },
 						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Cible_IDD_3F_lod0.msh",
 						name = "SNCF_Cible_IDD_3F",
 						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 					},
-					{ -- Le Support
+					{
 						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Mats_Moderne.mtl", },
 						mesh = "SNCF_IDD-TIDD_Moderne_Mesh/SNCF_Support_IDD_lod0.msh",
 						name = "SNCF_Support_IDD",
@@ -27,11 +29,13 @@ return {
 					},
 				},
 				name = "RootNode",
-				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 1.86, 1, },
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 1.8600000143051, 1, },
 			},
-			static = false, visibleFrom = 0, visibleTo = 85,
+			static = false,
+			visibleFrom = 0,
+			visibleTo = 85,
 		},
-		{ -- LOD 1
+		{
 			node = {
 				children = {
 					{
@@ -48,11 +52,13 @@ return {
 					},
 				},
 				name = "RootNode",
-				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 1.86, 1, },
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 1.8600000143051, 1, },
 			},
-			static = false, visibleFrom = 85, visibleTo = 150,
+			static = false,
+			visibleFrom = 85,
+			visibleTo = 150,
 		},
-		{ -- LOD 2
+		{
 			node = {
 				children = {
 					{
@@ -69,9 +75,11 @@ return {
 					},
 				},
 				name = "RootNode",
-				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 1.86, 1, },
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -1, 0, 1.8600000143051, 1, },
 			},
-			static = false, visibleFrom = 150, visibleTo = 250,
+			static = false,
+			visibleFrom = 150,
+			visibleTo = 250,
 		},
 	},
 	metadata = { },

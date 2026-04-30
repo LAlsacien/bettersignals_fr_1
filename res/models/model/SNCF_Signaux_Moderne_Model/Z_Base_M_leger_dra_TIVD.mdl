@@ -5,12 +5,14 @@ return {
 		bbMin = { 3.1394908428192, 1.8529582023621, -1.3000025749207, },
 	},
 	collider = {
-		params = { halfExtents = { 0.98984062671661, 0.55000007152557, 2.7248632907867, }, },
+		params = {
+			halfExtents = { 0.98984062671661, 0.55000007152557, 2.7248632907867, },
+		},
 		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 		type = "BOX",
 	},
 	lods = {
-		{ -- LOD 0
+		{
 			node = {
 				children = {
 					{
@@ -23,9 +25,11 @@ return {
 				name = "RootNode",
 				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 			},
-			static = false, visibleFrom = 0, visibleTo = 85,
+			static = false,
+			visibleFrom = 0,
+			visibleTo = 85,
 		},
-		{ -- LOD 1
+		{
 			node = {
 				children = {
 					{
@@ -38,7 +42,9 @@ return {
 				name = "RootNode",
 				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
 			},
-			static = false, visibleFrom = 85, visibleTo = 150,
+			static = false,
+			visibleFrom = 85,
+			visibleTo = 250,
 		},
 	},
 	metadata = { },

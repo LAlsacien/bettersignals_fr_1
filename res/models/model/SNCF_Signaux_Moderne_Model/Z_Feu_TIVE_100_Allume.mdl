@@ -1,8 +1,8 @@
 function data()
 return {
 	boundingInfo = {
-		bbMax = { 3.6000542640686, 2.8789844512939, 5.9610447883606, },
-		bbMin = { 2.4462807178497, 1.9210156202316, 2.941633939743, },
+		bbMax = { 3.2200000286102, 3.2000000476837, 4.8899998664856, },
+		bbMin = { 4.2800002098083, 1.6000000238419, 6.3499999046326, },
 	},
 	collider = {
 		params = {
@@ -12,37 +12,6 @@ return {
 		type = "BOX",
 	},
 	lods = {
--------------------------------------------------- LOD0 --------------------------------------------------------------------------
-		{
-			node = {
-				children = {
-					{		
-						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TIV_Mobile_0_Moderne.mtl", },
-						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Feu_TIV_Mobile_0_Allume_lod0.msh",
-						name = "SNCF_Feu_TIV_Mobile_0_Allume",
-						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -0.079015, 0, 1, },
-					},
-					{	
-						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TIV_Mobile_0_Moderne.mtl", },
-						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Feu_TIV_Mobile_0_Allume_lod0.msh",
-						name = "SNCF_Feu_TIV_Mobile_0_Allume",
-						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0.302223, 0, 1, },
-					},
-					{	
-						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TIV_Mobile_0_Moderne.mtl", },
-						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Feu_TIV_Mobile_1_Allume_lod0.msh",
-						name = "SNCF_Feu_TIV_Mobile_1_Allume",
-						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
-					},
-						},
-				name = "RootNode",
-				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
-			},
-			static = false,
-			visibleFrom = 0,
-			visibleTo = 85,
-		},
--------------------------------------------------- LOD1 --------------------------------------------------------------------------
 		{
 			node = {
 				children = {
@@ -50,15 +19,44 @@ return {
 						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TIV_Mobile_0_Moderne.mtl", },
 						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Feu_TIV_Mobile_0_Allume_lod0.msh",
 						name = "SNCF_Feu_TIV_Mobile_0_Allume",
-						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -0.079015, 0, 1, },
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -0.079015001654625, 0, 1, },
 					},
-					{	
+					{
 						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TIV_Mobile_0_Moderne.mtl", },
 						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Feu_TIV_Mobile_0_Allume_lod0.msh",
 						name = "SNCF_Feu_TIV_Mobile_0_Allume",
-						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0.302223, 0, 1, },
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0.30222299695015, 0, 1, },
 					},
-					{	
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TIV_Mobile_0_Moderne.mtl", },
+						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Feu_TIV_Mobile_1_Allume_lod0.msh",
+						name = "SNCF_Feu_TIV_Mobile_1_Allume",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false,
+			visibleFrom = 0,
+			visibleTo = 85,
+		},
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TIV_Mobile_0_Moderne.mtl", },
+						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Feu_TIV_Mobile_0_Allume_lod0.msh",
+						name = "SNCF_Feu_TIV_Mobile_0_Allume",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, -0.079015001654625, 0, 1, },
+					},
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TIV_Mobile_0_Moderne.mtl", },
+						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Feu_TIV_Mobile_0_Allume_lod0.msh",
+						name = "SNCF_Feu_TIV_Mobile_0_Allume",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0.30222299695015, 0, 1, },
+					},
+					{
 						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TIV_Mobile_0_Moderne.mtl", },
 						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Feu_TIV_Mobile_1_Allume_lod0.msh",
 						name = "SNCF_Feu_TIV_Mobile_1_Allume",
@@ -72,7 +70,6 @@ return {
 			visibleFrom = 85,
 			visibleTo = 150,
 		},
--------------------------------------------------- LOD2 --------------------------------------------------------------------------
 	},
 	metadata = {
 		availability = {

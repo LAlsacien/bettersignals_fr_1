@@ -34,8 +34,9 @@ function data()
                 isAnimated = false,
             }
             signals.signals['b_type_bal'] = {
-                type = "main",
-                isAnimated = false,
+                type = "hybrid",
+                preSignalTriggerKey = "opt_is_groupe",
+                preSignalTriggerValue = 1,
             }
             signals.signals['g_type_bal'] = {
                 type = "main",
