@@ -51,7 +51,7 @@ function data()
                 key = "opt_cible_r",
                 name = _("Type de Cible R"),
                 uiType = "COMBOBOX",
-                values = { _("RA (Avertissement)"), _("RAR (Avertissement + Ralentissement)"), _("RAD (Avertissement + Disque)"), _("RD (Disque)") },
+                values = { _("RA (Avertissement)"), _("RAR (Avertissement + Ralentissement + FV)"), _("RAD (Avertissement + Disque + FV)"), _("RD (Disque)"), _("RAD SFV (Avertissement + Disque)") },
                 defaultIndex = 0,
             },
             {
@@ -91,17 +91,18 @@ function data()
             -- =========================================================================
             -- 1. INITIALISATION ET CONFIGURATION CIBLE
             -- =========================================================================
-            local has_jcli = (params.opt_jcli == 1)
             local is_droite = (params.opt_pos == 1)
             local opt_r = params.opt_cible_r or 0
             local mast_idx = params.mast_type or 0
             
             local cible_mdl, plaque_type = "", ""
-            local has_disque, has_avert, has_ralent = false, false, false
+            local has_disque, has_avert, has_ralent, has_vert = false, false, false, false
             if opt_r == 0 then cible_mdl, plaque_type, has_avert = "Z_Cible_Type_R_RA.mdl", "A", true
-            elseif opt_r == 1 then cible_mdl, plaque_type, has_avert, has_ralent = "Z_Cible_Type_R_RAR.mdl", "A", true, true
-            elseif opt_r == 2 then cible_mdl, plaque_type, has_avert, has_disque = "Z_Cible_Type_R_RAD.mdl", "D", true, true
-            elseif opt_r == 3 then cible_mdl, plaque_type, has_disque = "Z_Cible_Type_R_RD.mdl", "D", true end
+            elseif opt_r == 1 then cible_mdl, plaque_type, has_avert, has_ralent, has_vert = "Z_Cible_Type_R_RAR.mdl", "A", true, true, true
+            elseif opt_r == 2 then cible_mdl, plaque_type, has_avert, has_disque, has_vert = "Z_Cible_Type_R_RAD.mdl", "D", true, true, true
+            elseif opt_r == 3 then cible_mdl, plaque_type, has_disque, has_vert = "Z_Cible_Type_R_RD.mdl", "D", true, true
+            elseif opt_r == 4 then cible_mdl, plaque_type, has_avert, has_disque = "Z_Cible_Type_R_RAD_SFV.mdl", "D", true, true end
+            
 
             local ox = (params.offset_x or 10) - 10
             local oy = (params.offset_y or 10) - 10
@@ -124,12 +125,45 @@ function data()
                 end
             end
 
+            local canton_court = (params.following_signal and params.following_signal.paramsOverride and tonumber(params.following_signal.paramsOverride.cc) == 1)
+            local next_next_is_rr = 0
+            if params.following_signal then
+                if params.following_signal.following_signal and params.following_signal.following_signal.paramsOverride then
+                    next_next_is_rr = tonumber(params.following_signal.following_signal.paramsOverride.rr) or 0
+
+                elseif params.following_signal.following_signal and params.following_signal.following_signal.signal_speed then
+                    local speed_current = params.signal_speed or 999
+                    local speed_next = params.following_signal.following_signal.signal_speed
+                    if speed_current > speed_next then
+                        if speed_next > 0 and speed_next <= 30 then 
+                            next_next_is_rr = 1
+                        elseif speed_next > 30 and speed_next <= 60 then 
+                            next_next_is_rr = 2
+                        end
+                    end
+                end
+            end
+
             local dist_red = (params.signal_state == 0) and 1 or (params.following_signal and (params.following_signal.signal_state == 0 and 1 or (params.following_signal.following_signal and (params.following_signal.following_signal.signal_state == 0 and 2 or 3) or 4)) or 4)
 
             local display = "JAUNE"
-            if dist_red == 1 then force_ralent = 0; if opt_r == 3 or (opt_r == 2 and force_disque) then display = "DISQUE" else display = "JAUNE" end
-            elseif dist_red == 2 then display = has_jcli and "JAUNE_CLI" or "VERT"
+            if dist_red == 1 then force_ralent = 0; if opt_r == 3 or (opt_r == 2 and force_disque) or (opt_r == 4 and force_disque) then display = "DISQUE" else display = "JAUNE" end
+            elseif dist_red == 2 then display = canton_court and "JAUNE_CLI" or "VERT"
             else display = "VERT" end
+
+            if canton_court and next_next_is_rr == 1 then
+                display = "JAUNE_CLI"         
+            elseif canton_court and next_next_is_rr == 2 then
+                force_ralent = 2
+                display = "VERT"
+            end
+
+            if opt_r == 4 then
+                if display == "VERT" or display == "JAUNE_CLI" then
+                    display = "JAUNE"
+                end
+            end
+
 
             -- =========================================================================
             -- 3. MOTEUR GÉOMÉTRIQUE (MATRICES)
@@ -193,11 +227,15 @@ function data()
             if display == "DISQUE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_disque_j })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_disque_r })
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_vert })
+                if has_vert then
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_vert })
+                end
                 if has_avert then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_avert }) end
             elseif display == "JAUNE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_avert })
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_vert })
+                if has_vert then
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_vert })
+                end
                 if has_disque then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_disque_j }); table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_disque_r }) end
             elseif display == "JAUNE_CLI" then
                 local cli_mdl = is_combo_r60 and "Z_L_Feu_Type_R_R60_Jcli_Allume.mdl" or "Z_L_Feu_Jaune_Cli_Allume.mdl"
