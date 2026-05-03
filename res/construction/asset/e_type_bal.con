@@ -240,7 +240,7 @@ function data()
                 end
             end
 
-            if display == "CARRE" or display == "ROUGE_CLI" then force_ralent = 0 end
+            if display == "ROUGE" or display == "ROUGE_CLI" then force_ralent = 0 end
             if display == "JAUNE" then force_ralent = 0 end
 
             -- =========================================================================
