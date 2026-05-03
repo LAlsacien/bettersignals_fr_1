@@ -48,12 +48,6 @@ function data()
                 defaultIndex = 0,
             },
             {
-                key = "opt_jcli",
-                name = _("Activer le Jaune Clignotant"),
-                uiType = "CHECKBOX",
-                defaultIndex = 0,
-            },
-            {
                 key = "opt_pos",
                 name = _("Position du signal"),
                 uiType = "COMBOBOX",
@@ -143,7 +137,6 @@ function data()
             -- =========================================================================
             -- 1. INITIALISATION ET PARAMÈTRES UI
             -- =========================================================================
-            local has_jcli = (params.opt_jcli == 1)
             local has_vcli = (params.opt_vcli == 1)
             local is_droite = (params.opt_pos == 1)
             local is_circ_droite = (params.opt_sens == 1)
@@ -176,32 +169,21 @@ function data()
                 end
             end
 
-            local next_is_ralent = false
-            local next_has_jcli = false
-
+            local canton_court = (params.following_signal and params.following_signal.paramsOverride and tonumber(params.following_signal.paramsOverride.cc) == 1)
+            local next_is_canton_court = (params.following_signal and params.following_signal.following_signal and params.following_signal.following_signal.paramsOverride and tonumber(params.following_signal.following_signal.paramsOverride.cc) == 1)
+            local next_next_is_rr = 0
             if params.following_signal then
-                if params.following_signal.construction_params and params.following_signal.construction_params.opt_jcli then
-                    if tonumber(params.following_signal.construction_params.opt_jcli) == 1 then
-                        next_has_jcli = true
-                    end
-                end
+                if params.following_signal.following_signal and params.following_signal.following_signal.paramsOverride then
+                    next_next_is_rr = tonumber(params.following_signal.following_signal.paramsOverride.rr) or 0
 
-                if params.following_signal.following_signal then
-                    if params.following_signal.following_signal.paramsOverride then
-                        local next_next_rr = tonumber(params.following_signal.following_signal.paramsOverride.rr) or 0
-                        if next_next_rr == 1 or next_next_rr == 2 then
-                            next_is_ralent = true
-                        end
-                    end
-
-                    -- Vérification via différentiel de vitesse (Signal_Speed)
-                    if not next_is_ralent and params.following_signal.following_signal.signal_speed then
-                        local speed_current = params.following_signal.signal_speed or 999
-                        local speed_next = params.following_signal.following_signal.signal_speed
-                        
-                        -- Si la vitesse chute brutalement (<= 60), on active la pré-annonce
-                        if speed_current > speed_next and speed_next > 0 and speed_next <= 60 then
-                            next_is_ralent = true
+                elseif params.following_signal.following_signal and params.following_signal.following_signal.signal_speed then
+                    local speed_current = params.signal_speed or 999
+                    local speed_next = params.following_signal.following_signal.signal_speed
+                    if speed_current > speed_next then
+                        if speed_next > 0 and speed_next <= 30 then 
+                            next_next_is_rr = 1
+                        elseif speed_next > 30 and speed_next <= 60 then 
+                            next_next_is_rr = 2
                         end
                     end
                 end
@@ -262,9 +244,9 @@ function data()
             elseif dist_red == 2 then
                 if force_rcli == 2 then 
                     display = "JAUNE"
-                elseif has_jcli then 
+                elseif canton_court then 
                     display = "JAUNE_CLI"
-                elseif has_vcli and not has_jcli then
+                elseif has_vcli and not canton_court then
                     display = "VERT_CLI"
                 else 
                     display = "VERT"
@@ -272,7 +254,7 @@ function data()
                 
             elseif dist_red == 3 then
                 if force_rcli == 3 then
-                    if has_jcli then
+                    if canton_court then
                         display = "JAUNE_CLI"
                     elseif has_vcli then
                         display = "VERT_CLI"
@@ -280,7 +262,9 @@ function data()
                         display = "VERT"
                     end
                 else
-                    if has_vcli and (next_has_jcli or next_is_ralent) then
+                    if canton_court and next_next_is_rr == 1 then
+                        display = "JAUNE_CLI"
+                    elseif has_vcli and (next_is_canton_court or (next_next_is_rr > 0 and next_next_is_rr < 3)) then
                         display = "VERT_CLI"
                     else
                         display = "VERT"
@@ -289,13 +273,19 @@ function data()
                 
             elseif dist_red >= 4 then
                 if force_rcli == 4 then
-                    if has_vcli and next_has_jcli then
+                    if has_vcli and next_is_canton_court then
                         display = "VERT_CLI"
                     else
                         display = "VERT"
                     end
-                else
-                    display = "VERT"
+                else             
+                    if canton_court and next_next_is_rr == 1 then
+                        display = "JAUNE_CLI"                
+                    elseif has_vcli and (next_is_canton_court or (next_next_is_rr > 0 and next_next_is_rr < 3)) then
+                        display = "VERT_CLI"
+                    else
+                        display = "VERT"
+                    end
                 end
             end
 
