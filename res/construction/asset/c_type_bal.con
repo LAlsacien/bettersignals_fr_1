@@ -64,7 +64,7 @@ function data()
                 key = "opt_cible_spec",
                 name = _("Type de Cible Spécifique"),
                 uiType = "COMBOBOX",
-                values = { _("Standard"), _("Sans Feu Vert"), _("Sans Avertissement"), _("Sans Feu Blanc / Sans Rouge") },
+                values = { _("Standard"), _("Sans Feu Vert"), _("Sans Avertissement"), _("Sans Feu Blanc / Sans Rouge"), _("Sans Feu Blanc / Sans Avertissement"), _("Sans Rouge") },
                 defaultIndex = 0,
             },
             {
@@ -157,7 +157,7 @@ function data()
             local mast_idx = params.mast_type or 0
             local opt_spec = params.opt_cible_spec or 0
             local has_carre = false
-            if params.opt_carre and tonumber(params.opt_carre) == 1 and opt_spec ~= 3 then has_carre = true end
+            if params.opt_carre and tonumber(params.opt_carre) == 1 and opt_spec ~= 3 and opt_spec ~=4 and opt_spec ~=5 then has_carre = true end
             
             local tiv_speeds = { "30", "40", "50", "60", "70", "80", "90", "100", "110", "120", "130", "140", "150", "160" }
             local vit_tiv_idx = params.opt_vit_tiv or 0
@@ -232,7 +232,8 @@ function data()
 
             local hide_vert = false
             local hide_jaune = false
-            local hide_rb = false
+            local hide_blanc = false
+            local hide_rouge = false
             local cible_mdl = "Z_Cible_Type_C.mdl" 
 
             if opt_spec == 1 then 
@@ -243,8 +244,16 @@ function data()
                 hide_jaune = true
             elseif opt_spec == 3 then
                 cible_mdl = "Z_Cible_Type_C_SFB.mdl"
-                hide_rb = true
+                hide_blanc = true
+                hide_rouge = true
                 force_rcli = 0
+            elseif opt_spec == 4 then
+                cible_mdl = "Z_Cible_Type_B_SA.mdl"
+                hide_jaune = true
+                hide_blanc = true
+            elseif opt_spec == 5 then
+                cible_mdl = "Z_Cible_Type_C_SR.mdl"
+                hide_rouge = true
             end
 
             local display = "VERT"
@@ -307,16 +316,14 @@ function data()
                 end
             end
 
-            if not hide_rb then 
+            if not hide_blanc then 
                 if dist_red >=1 then
                     if force_blanc == 1 then
                         display = "BLANC"
                     elseif force_blanc == 2 then
                         display = "BLANC_CLI"
-                    elseif force_blanc == 3 and manoeuvre then
+                    elseif manoeuvre and limite_manoeuvre == 0 then
                         display = "BLANC"
-                    elseif force_blanc == 4 and manoeuvre then
-                        display = "BLANC_CLI"
                     end
                 end
             end
@@ -325,7 +332,7 @@ function data()
                 if display == "VERT" or display == "VERT_CLI" then
                     display = "JAUNE"
                 end
-            elseif opt_spec == 2 then
+            elseif opt_spec == 2 or opt_spec == 4 then
                 if display == "JAUNE" or display == "JAUNE_CLI" then
                     display = "VERT"
                 end
@@ -505,7 +512,7 @@ function data()
 
             if display == "CARRE" then
                 if not has_carre then
-                    if not hide_rb then
+                    if not hide_rouge then
                         table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
                     end
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Violet_Allume.mdl", transf = matrice_feux })
@@ -513,14 +520,16 @@ function data()
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux })
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Allume.mdl", transf = matrice_feux_haut })
                 end
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Eteint.mdl", transf = matrice_oeilleton })
+                if not hide_rouge then
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Eteint.mdl", transf = matrice_oeilleton })
+                end
                 if not hide_vert then
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
                 end
                 if not hide_jaune then
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
                 end
-                if not hide_rb then
+                if not hide_blanc then
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Eteint.mdl", transf = matrice_feux })
                 end
             
@@ -538,13 +547,15 @@ function data()
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Eteint.mdl", transf = matrice_feux })
 
             elseif display == "JAUNE_CLI" then
-                if not hide_rb then
+                if not hide_rouge then
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton })
+                end
+                if not hide_blanc then
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Eteint.mdl", transf = matrice_feux })
                 end
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Cli_Allume.mdl", transf = matrice_feux })  
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton })
                 if not hide_vert then
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
                 end
@@ -554,7 +565,9 @@ function data()
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Cli_Allume.mdl", transf = matrice_feux })  
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Eteint.mdl", transf = matrice_oeilleton })
+                if not hide_rouge then
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Eteint.mdl", transf = matrice_oeilleton })
+                end
                 if not hide_vert then
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
                 end
@@ -567,7 +580,9 @@ function data()
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Allume.mdl", transf = matrice_feux })  
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Eteint.mdl", transf = matrice_oeilleton })
+                if not hide_rouge then
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Eteint.mdl", transf = matrice_oeilleton })
+                end
                 if not hide_vert then
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Eteint.mdl", transf = matrice_feux })
                 end
@@ -575,11 +590,13 @@ function data()
             
             elseif display == "VERT" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Allume.mdl", transf = matrice_feux })
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton })
-                if not hide_rb then
-                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
-                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Eteint.mdl", transf = matrice_feux })
-                    end
+                if not hide_rouge then
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton })
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
+                end
+                if not hide_blanc then
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Eteint.mdl", transf = matrice_feux })
+                end
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
                 if not hide_jaune then
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
@@ -587,11 +604,13 @@ function data()
             
              elseif display == "VERT_CLI" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Vert_Cli_Allume.mdl", transf = matrice_feux })
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton })
-                if not hide_rb then
-                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
-                        table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Eteint.mdl", transf = matrice_feux })
-                    end
+                if not hide_rouge then
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton })
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
+                end
+                if not hide_blanc then
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Eteint.mdl", transf = matrice_feux })
+                end
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })
                 if not hide_jaune then
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Eteint.mdl", transf = matrice_feux })
@@ -600,9 +619,11 @@ function data()
         
             elseif display == "JAUNE" then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Jaune_Allume.mdl", transf = matrice_feux })
-                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton })
-                if not hide_rb then
+                if not hide_rouge then
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux })
+                    table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Oeilleton_Allume.mdl", transf = matrice_oeilleton })
+                end
+                if not hide_blanc then
                     table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Blanc_Eteint.mdl", transf = matrice_feux })
                 end
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_L_Feu_Rouge_Eteint.mdl", transf = matrice_feux_haut })

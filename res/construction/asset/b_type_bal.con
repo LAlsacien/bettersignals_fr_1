@@ -48,12 +48,6 @@ function data()
                 defaultIndex = 0,
             },
             {
-                key = "opt_is_groupe",
-                name = _("Signal de Groupe (Waypoint)"),
-                uiType = "CHECKBOX",
-                defaultIndex = 0,
-            },
-            {
                 key = "opt_pos",
                 name = _("Position du signal"),
                 uiType = "COMBOBOX",
@@ -220,70 +214,60 @@ function data()
                     end
                 end
             end
-
+            
             local display = "VERT"
 
-            if is_groupe then
-                if params.signal_state == 0 then
-                    display = "CARRE"
-                elseif params.following_signal and params.following_signal.signal_state == 0 then
-                    display = "JAUNE" 
+            if dist_red == 0 then 
+                display = "CARRE" 
+            elseif dist_red == 1 then 
+                if force_rcli == 1 then
+                    display = "ROUGE_CLI"
                 else
+                    display = "JAUNE"
+                end
+            elseif dist_red == 2 then
+                if force_rcli == 2 then 
+                    display = "JAUNE"
+                elseif canton_court then 
+                    display = "JAUNE_CLI"
+                elseif has_vcli and not canton_court then
+                    display = "VERT_CLI"
+                else 
                     display = "VERT"
                 end
-            else
-                if dist_red == 0 then 
-                    display = "CARRE" 
-                elseif dist_red == 1 then 
-                    if force_rcli == 1 then
-                        display = "ROUGE_CLI"
-                    else
-                        display = "JAUNE"
-                    end
-                elseif dist_red == 2 then
-                    if force_rcli == 2 then 
-                        display = "JAUNE"
-                    elseif canton_court then 
+            elseif dist_red == 3 then
+                if force_rcli == 3 then
+                    if canton_court then
                         display = "JAUNE_CLI"
-                    elseif has_vcli and not canton_court then
+                    elseif has_vcli then
                         display = "VERT_CLI"
-                    else 
+                    else
                         display = "VERT"
                     end
-                elseif dist_red == 3 then
-                    if force_rcli == 3 then
-                        if canton_court then
-                            display = "JAUNE_CLI"
-                        elseif has_vcli then
-                            display = "VERT_CLI"
-                        else
-                            display = "VERT"
-                        end
+                else
+                    if canton_court and next_next_is_rr == 1 then
+                        display = "JAUNE_CLI"
+                    elseif has_vcli and (next_is_canton_court or (next_next_is_rr > 0 and next_next_is_rr < 3)) then
+                        display = "VERT_CLI"
                     else
-                        if canton_court and next_next_is_rr == 1 then
-                            display = "JAUNE_CLI"
-                        elseif has_vcli and (next_is_canton_court or (next_next_is_rr > 0 and next_next_is_rr < 3)) then
-                            display = "VERT_CLI"
-                        else
-                            display = "VERT"
-                        end
+                        display = "VERT"
                     end
+                end
                 
-                elseif dist_red >= 4 then
-                    if force_rcli == 4 then
-                        if has_vcli and next_is_canton_court then
-                            display = "VERT_CLI"
-                        else
-                            display = "VERT"
-                        end
-                    else             
-                        if canton_court and next_next_is_rr == 1 then
-                            display = "JAUNE_CLI"                
-                        elseif has_vcli and (next_is_canton_court or (next_next_is_rr > 0 and next_next_is_rr < 3)) then
-                            display = "VERT_CLI"
-                        else
-                            display = "VERT"
-                        end
+            elseif dist_red >= 4 then
+                if force_rcli == 4 then
+                    if has_vcli and next_is_canton_court then
+                        display = "VERT_CLI"
+                    else
+                        display = "VERT"
+                    end
+                else             
+                    if canton_court and next_next_is_rr == 1 then
+                        display = "JAUNE_CLI"                
+                    elseif has_vcli and (next_is_canton_court or (next_next_is_rr > 0 and next_next_is_rr < 3)) then
+                        display = "VERT_CLI"
+                    else
+                        display = "VERT"
                     end
                 end
             end

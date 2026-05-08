@@ -49,9 +49,14 @@ function data()
                     _("Simple"), _("Simple Haut"), _("Léger"), _("Léger Haut"), 
                     _("Léger & Drapeau"), _("Léger Haut & Drapeau"), _("Lourd"), 
                     _("Lourd Haut"), _("Lourd & Drapeau"), _("Lourd Haut & Drapeau"), 
-                    _("Nacelle Moderne"), _("Bas")
-                },
+                    _("Nacelle Moderne") },
                 defaultIndex = 0,
+            },
+            {
+                key = "opt_bas",
+                name = _("Signal Type I Bas"),
+                uiType = "CHECKBOX",
+                defaultIndex = -1,
             },
             {
                 key = "add_fleche",
@@ -85,6 +90,7 @@ function data()
             -- =========================================================================
             local is_droite = (params.opt_pos == 1)
             local mast_idx = params.mast_type or 0
+            local is_bas = (params.opt_bas == 1)
             
             local ox = (params.offset_x or 10) - 10
             local oy = (params.offset_y or 10) - 10
@@ -118,7 +124,6 @@ function data()
                 [8] = { mdl = "Z_Base_M_lourd_dra.mdl", px = 0, py = 0.64, pz = 0 },
                 [9] = { mdl = "Z_Base_M_lourd_haut_dra.mdl", z = 1.86, px = 0, py = 0.64, pz = 0 },
                 [10]= { mdl = "Z_Base_M_nacelle_moderne.mdl", x = -0.15, y = -1.35, z = 3.205, px = 0, py = 0, pz = 0 },
-                [11]= { mdl = nil } -- Signal Nain
             }
             local current_mast = mast_config[mast_idx] or mast_config[0]
             local is_nacelle = (mast_idx == 10)
@@ -145,7 +150,7 @@ function data()
             local matrice_violet = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+z_violet, 1 }
 
             -- Cas particulier : Signal Nain (Bas)
-            if mast_idx == 11 then
+            if is_bas then
                 local y_b, z_b_n = ly + 0.1378, lz - 3.8581
                 matrice_blanc = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-y_b*s), oy+(lx*s+y_b*c), oz+z_b_n, 1 }
                 local y_r, z_r_n = ly - 0.1411, lz - 3.4255
@@ -157,7 +162,7 @@ function data()
             -- =========================================================================
             -- 4. ASSEMBLAGE FINAL
             -- =========================================================================
-            if mast_idx == 11 then
+            if is_bas then
                 table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_Type_I_bas.mdl", transf = matrice_feux })
             else
                 if final_mast_mdl then table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. final_mast_mdl, transf = matrice_mat }) end
@@ -168,7 +173,7 @@ function data()
 
             -- Flèche de direction
             local fleche_type = params.add_fleche or 0
-            if fleche_type > 0 and mast_idx < 11 then
+            if fleche_type > 0 and not is_bas then
                 local f_prefixes = { "", "SNCF_Fleche", "SNCF_Fleche2", "SNCF_Fleche3", "SNCF_FlecheV" }
                 local f_prefix = f_prefixes[fleche_type + 1]
                 local f_pos = is_droite and "_dg" or "_gd"
