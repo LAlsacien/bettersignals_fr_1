@@ -1,0 +1,76 @@
+﻿function data()
+return {
+	boundingInfo = {
+		bbMax = { 5.5479125976563, 3.585170507431, 4.2560887336731, },
+		bbMin = { 3.2607960700989, 1.8922789096832, -1.3000025749207, },
+	},
+	collider = {
+		params = {
+			halfExtents = { 1.1435582637787, 0.8464457988739, 2.7780456542969, },
+		},
+		transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+		type = "BOX",
+	},
+	lods = {
+-------------------------------------------------- LOD0 --------------------------------------------------------------------------
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TIVD_Mobile_100_Moderne.mtl", },
+						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Feu_TIVD_Mobile_Ferme_Allume_lod0.msh",
+						name = "SNCF_Feu_TIVD_Mobile_Ferme_Allume",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false,
+			visibleFrom = 0,
+			visibleTo = 85,
+		},
+-------------------------------------------------- LOD1 --------------------------------------------------------------------------
+		{
+			node = {
+				children = {
+					{
+						materials = { "SNCF_Signaux_Moderne_Material/SNCF_Feu_TIVD_Mobile_100_Moderne.mtl", },
+						mesh = "SNCF_TIV_Mobile_Moderne_Mesh/SNCF_Feu_TIVD_Mobile_Ferme_Allume_lod0.msh",
+						name = "SNCF_Feu_TIVD_Mobile_Ferme_Allume",
+						transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+					},
+				},
+				name = "RootNode",
+				transf = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, },
+			},
+			static = false,
+			visibleFrom = 85,
+			visibleTo = 150,
+		},
+	},
+	metadata = {
+		availability = {
+			yearFrom = 2005,
+			yearTo = 0,
+		},
+		category = {
+			categories = { "CC_SNCF_Signaux_Moderne_TIV_Gauche", },
+		},
+		cost = {
+			price = 7000,
+			priceScale = 1,
+		},
+		description = {
+			description = _("100_DESC"),
+			name = _("Signalisation Type TIV Mobile à Distance"),
+		},
+		signal = {
+			soundevent = "",
+			type = "WAYPOINT",
+			upright = true,
+		},
+	},
+	version = 1,
+}
+end

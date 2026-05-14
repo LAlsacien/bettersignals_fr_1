@@ -54,11 +54,15 @@ function data()
                 isAnimated = false,
             }
             signals.signals['i_type_bal'] = {
-                type = "main",
+                type = "shunting",
                 isAnimated = false,
             }
             signals.signals['h_type_bal'] = {
                 type = "main",
+                isAnimated = false,
+            }
+            signals.signals['tiv_d_mobile'] = {
+                type = "pre",
                 isAnimated = false,
             }
             signals.signals['r_type_bal'] = {

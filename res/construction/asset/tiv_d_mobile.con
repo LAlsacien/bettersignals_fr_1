@@ -1,4 +1,7 @@
 function data()
+    -- =========================================================================
+    -- UTILITAIRES DE CONFIGURATION
+    -- =========================================================================
     local function intRange(start, stop, step)
         local a = {}
         local i = start
@@ -18,41 +21,170 @@ function data()
         end
         return res
     end
-
+    
     local range_offset = map(intRange(-10, 10, 1), tostring)
-    local range_rot = map(intRange(-180, 180, 5), tostring)
+    local range_rot    = map(intRange(-180, 180, 5), tostring)
 
     return {
         type = "ASSET_TRACK",
         description = {
-            name = _("TIV D Mobile"),
+            name        = _("TIV D Mobile"),
             description = _("SNCF - Tableau Indicateur de Vitesse à Distance Mobile"),
-            icon = "ui/construction/assets/tiv_d_mobile.tga"
+            icon        = "ui/construction/assets/tiv_d_mobile.tga"
         },
-        availability = { yearFrom = 2005 },
-        skipOnInit = true,
-        categories = { "better_signals" },
-        skipCollision = true,
-        autoRemovable = false,
-        order = 11119,
+        availability   = { yearFrom = 2005 },
+        skipOnInit     = true,
+        categories     = { "better_signals" },
+        skipCollision  = true,
+        autoRemovable  = false,
+        order          = 11119,
+
+        params = {
+            {
+                key          = "opt_vit_tivd",
+                name         = _("Vitesse du TIV D Mobile"),
+                uiType       = "COMBOBOX",
+                values       = { "30", "40", "50", "60", "70", "80", "90", "100", "110", "120", "130", "140", "150", "160" },
+                defaultIndex = 0,
+            },
+            {
+                key          = "mast_type",
+                name         = _("Type de mât"),
+                uiType       = "COMBOBOX",
+                values       = { _("Mât Léger"), _("Mât Léger Haut"), _("Mât Léger Drapeau"), _("Mât Léger Haut Drapeau"), _("Nacelle") },
+                defaultIndex = 0,
+            },
+            {
+                key          = "opt_pos",
+                name         = _("Position du signal"),
+                uiType       = "COMBOBOX",
+                values       = { _("Gauche"), _("Droite") },
+                defaultIndex = 0,
+            },
+            {
+                key = "add_fleche",
+                name = _("Ajouter une Flèche"),
+                uiType = "COMBOBOX",
+                values = { _("Aucune"), _("Flèche Simple"), _("Flèche Double"), _("Flèche Triple"), _("Flèche Droite") },
+                defaultIndex = 0,
+            },
+            {
+                key = "offset_x",
+                name = _("Décalage X (Avant/Arrière)"), uiType = "SLIDER", values = range_offset, defaultIndex = 10,
+            },
+            {
+                key = "offset_y",
+                name = _("Décalage Y (Gauche/Droite)"), uiType = "SLIDER", values = range_offset, defaultIndex = 10,
+            },
+            {
+                key = "offset_z",
+                name = _("Décalage Z (Haut/Bas)"), uiType = "SLIDER", values = range_offset, defaultIndex = 10,
+            },
+            {
+                key = "offset_rot",
+                name = _("Rotation Z (Degrés)"), uiType = "SLIDER", values = range_rot, defaultIndex = 36,
+            }
+        },
 
         updateFn = function(params)
-            local result = {
-                models = {},
-                groundFaces = {},
-                terrainAlignmentLists = {}
+            local result = { models = {}, groundFaces = {}, terrainAlignmentLists = {} }
+
+            local tiv_speeds   = { "30", "40", "50", "60", "70", "80", "90", "100", "110", "120", "130", "140", "150", "160" }
+            local vit_idx      = params.opt_vit_tivd or 0
+            local vit_val      = tiv_speeds[vit_idx + 1] or "30"
+            local mast_idx = params.mast_type or 0
+
+            local wp_tivm = 0
+            if params.following_signal and params.following_signal.paramsOverride and params.following_signal.paramsOverride.tivm then
+                wp_tivm = tonumber(params.following_signal.paramsOverride.tivm) or 0
+            end
+
+            local ox = (params.offset_x or 10) - 10
+            local oy = (params.offset_y or 10) - 10
+            local oz = (params.offset_z or 10) - 10
+            local orot = ((params.offset_rot or 36) * 5) - 180
+
+            local is_droite    = (params.opt_pos == 1)
+
+            
+            -- =========================================================================
+            -- 3. MOTEUR GÉOMÉTRIQUE (MATRICES)
+            -- =========================================================================
+            local mast_config = {
+                [0] = { mdl = "Z_Base_M_leger_TIVD.mdl", x = 0, y = 0, z = 0, px = 0, py = -0.44, pz = 0 },
+                [1] = { mdl = "Z_Base_M_leger_haut_TIVD.mdl", x = 0, y = 0, z = 1.86, px = 0, py = -0.44, pz = 0 },
+                [2] = { mdl = "Z_Base_M_leger_dra_TIVD.mdl", x = 0, y = 0, z = 0, px = 0, py = 0, pz = 0 },
+                [3] = { mdl = "Z_Base_M_leger_haut_dra_TIVD.mdl", x = 0, y = 0, z = 1.86, px = 0, py = 0, pz = 0 },
+                [4] = { mdl = "Z_Base_M_nacelle_moderne_TIVD.mdl", x = -0.15, y = -1.35, z = 3.205, px = 0, py = 0, pz = 0 }
             }
 
-            table.insert(result.groundFaces, {  
-                face = { { -1, -1, 0 }, { 1, -1, 0 }, { 1, 1, 0 } },
-                modes = { { type = "FILL", key = "industry_floor.lua" } },
-                loop = true,
-                alignmentOffsetMode = "OBJECT",
-                alignmentDirMode = "OBJECT",
-                alignmentOffset = { -2.0, -1.0 },
-            })
-            table.insert(result.terrainAlignmentLists, { type = "EQUAL", faces =  { } })
-            
+            local current_mast = mast_config[mast_idx] or mast_config[0]
+            local is_nacelle = (string.find(current_mast.mdl, "nacelle") ~= nil)
+            local is_drapeau = (string.find(current_mast.mdl, "dra") ~= nil)
+            local local_shift_y = 0; local final_mast_mdl = current_mast.mdl
+            if is_droite then
+                if is_nacelle then local_shift_y = -2.4 
+                else local_shift_y = -4.8; final_mast_mdl = string.gsub(final_mast_mdl, ".mdl", "_Droite.mdl") end
+            end
+
+            local rad = math.rad(orot); local c = math.cos(rad); local s = math.sin(rad); local base_z = 1.05
+            local mast_local_y = is_droite and local_shift_y or 0
+            local matrice_mat = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(0*c-mast_local_y*s), oy+(0*s+mast_local_y*c), oz+base_z, 1 }
+
+            local lx, ly, lz = current_mast.x or 0, (current_mast.y or 0) + local_shift_y, base_z + (current_mast.z or 0)
+            local matrice_cible = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(lx*c-ly*s), oy+(lx*s+ly*c), oz+lz, 1 }
+
+            local px, py = current_mast.px or 0, (is_droite and not is_nacelle and (current_mast.py or 0) or (current_mast.py or 0)) + local_shift_y
+            if is_droite and is_drapeau then py = local_shift_y + -0.86 end
+            local matrice_plaque = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox+(px*c-py*s), oy+(px*s+py*c), oz+base_z+(current_mast.pz or 0), 1 }
+
+
+            local fs = params.following_signal
+            local isGreen = (params.signal_state and params.signal_state == 1)
+
+            local show_tivd = false
+            if wp_tivm >= 1 then
+                show_tivd = true
+            elseif not isGreen then
+                show_tivd = true
+            elseif fs and fs.signal_state == 0 then
+                show_tivd = true
+            else
+                show_tivd = false
+            end
+
+            local final_plaque = "Z_Plaque_" .. (is_nacelle and "Nacelle_" or "") .. "TIVD.mdl"
+            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. final_mast_mdl, transf = matrice_mat })
+            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Cible_TIVD.mdl", transf = matrice_cible })
+            table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/" .. final_plaque, transf = matrice_plaque })
+
+            -- Feu : allumé (TIV D chiffré) ou éteint (Effacé)
+            if show_tivd then
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_TIVD_" .. vit_val .. "_Allume.mdl", transf = matrice_cible })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_TIVD_Ouvert_Eteint.mdl", transf = matrice_cible })
+            else
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_TIVD_Ouvert_Allume.mdl", transf = matrice_cible })
+                table.insert(result.models, { id = "SNCF_Signaux_Moderne_Model/Z_Feu_TIVD_Eteint.mdl", transf = matrice_cible })
+            end
+
+            -- Flèche de direction
+            local fleche_type = params.add_fleche or 0
+            if fleche_type > 0 and mast_idx < 4 then
+                local f_prefixes = { "", "SNCF_Fleche", "SNCF_Fleche2", "SNCF_Fleche3", "SNCF_FlecheV" }
+                local f_prefix = f_prefixes[fleche_type + 1]
+                local f_pos = is_droite and "_dg" or "_gd"
+                local f_mast_map = { [0]="_l",[1]="_lh",[2]="_l",[3]="_lh" }
+                local f_mast = f_mast_map[mast_idx]
+                if f_mast then
+                    table.insert(result.models, { 
+                        id = "SNCF_Asset_Model/" .. f_prefix .. f_pos .. f_mast .. ".mdl", 
+                        transf = { c,s,0,0, -s,c,0,0, 0,0,1,0, ox,oy,oz, 1 } 
+                    })
+                end
+            end
+
+            table.insert(result.terrainAlignmentLists, { type = "EQUAL", faces = {} })
+
             return result
         end
     }
