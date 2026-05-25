@@ -32,6 +32,7 @@ function data()
             signals.signals['a_type_bal'] = {
                 type = "main",
                 isAnimated = false,
+                is_permissive = true,
             }
             signals.signals['b_type_bal'] = {
                 type = "main",
@@ -44,6 +45,7 @@ function data()
             signals.signals['e_type_bal'] = {
                 type = "main",
                 isAnimated = false,
+                is_permissive = true,
             }
             signals.signals['f_type_bal'] = {
                 type = "main",
@@ -62,7 +64,7 @@ function data()
                 isAnimated = false,
             }
             signals.signals['tiv_d_mobile'] = {
-                type = "pre",
+                type = "misc",
                 isAnimated = false,
             }
             signals.signals['r_type_bal'] = {

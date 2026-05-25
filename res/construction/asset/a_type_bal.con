@@ -63,12 +63,32 @@ function data()
                 key = "mast_type",
                 name = _("Type de Mât"),
                 uiType = "COMBOBOX",
-                values = { 
-                    _("Simple"), _("Simple Haut"), _("Léger"), _("Léger Haut"), 
-                    _("Léger & Drapeau"), _("Léger Haut & Drapeau"), _("Lourd"), 
-                    _("Lourd Haut"), _("Lourd & Drapeau"), _("Lourd Haut & Drapeau"), 
-                    _("Nacelle Moderne") 
-                },
+                values = { _("Simple"), _("Léger"), _("Lourd"), _("Nacelle") },
+                defaultIndex = 0,
+            },
+            {
+                key = "mast_style",
+                name = _("Style / Époque"),
+                uiType = "COMBOBOX",
+                values = { _("Moderne"), _("Ancien"), _("Ancien Rayé") },
+                defaultIndex = 0,
+            },
+            {
+                key = "mast_flag",
+                name = _("Mât Drapeau"),
+                uiType = "CHECKBOX",
+                defaultIndex = 0,
+            },
+            {
+                key = "mast_tall",
+                name = _("Mât Haut"),
+                uiType = "CHECKBOX",
+                defaultIndex = 0,
+            },
+            {
+                key = "mast_black",
+                name = _("Version Noire"),
+                uiType = "CHECKBOX",
                 defaultIndex = 0,
             },
             {
@@ -128,7 +148,28 @@ function data()
             local has_vcli = (params.opt_vcli == 1)
             local is_droite = (params.opt_pos == 1)
             local opt_spec = params.opt_cible_spec or 0
-            local mast_idx = params.mast_type or 0
+            
+            local mast_type = params.mast_type or 0
+            local mast_style = params.mast_style or 0
+            local mast_flag = (params.mast_flag == 1)
+            local mast_tall = (params.mast_tall == 1)
+            local mast_black = (params.mast_black == 1)
+            
+            -- =========================================================================
+            -- RÈGLES LOGIQUES (OVERRIDES)
+            -- =========================================================================
+            if mast_style == 1 or mast_style == 2 then
+                if mast_type == 3 then
+                    mast_style = 1 -- Nacelle ancienne is always style 1 (never rayé)
+                else
+                    mast_type = 2 -- Force Lourd for ancient masts
+                end
+            end
+            
+            if mast_style == 0 then
+                mast_black = false -- Modern masts are never black
+            end
+            
             local opt_plaque = params.opt_plaque_id or 0
             local fleche_type = params.add_fleche or 0
 
@@ -253,36 +294,74 @@ function data()
             end
 
             -- =========================================================================
-            -- 3. MOTEUR GÉOMÉTRIQUE (MATRICES)
+            -- 3. MOTEUR GÉOMÉTRIQUE (MATRICES) & STRING BUILDER
             -- =========================================================================
             
-            -- Config des mâts (Positionnement relatif des cibles et plaques)
-            local mast_config = {
-                [0] = { mdl = "Z_Base_M_simple.mdl",         x = 0,     y = 0,     z = 0,     px = 0,    py = 0,     pz = 0 }, 
-                [1] = { mdl = "Z_Base_M_simple_haut.mdl",    x = 0,     y = 0,     z = 1.860, px = 0,    py = 0,     pz = 0 },
-                [2] = { mdl = "Z_Base_M_leger.mdl",          x = 0,     y = 0,     z = 0,     px = 0,    py = 0,     pz = 0 },
-                [3] = { mdl = "Z_Base_M_leger_haut.mdl",     x = 0,     y = 0,     z = 1.860, px = 0,    py = 0,     pz = 0 },
-                [4] = { mdl = "Z_Base_M_leger_dra.mdl",      x = 0,     y = 0,     z = 0,     px = 0,    py = 0.425, pz = 0 },
-                [5] = { mdl = "Z_Base_M_leger_haut_dra.mdl", x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.425, pz = 0 },
-                [6] = { mdl = "Z_Base_M_lourd.mdl",          x = 0,     y = 0,     z = 0,     px = 0,    py = 0.2,   pz = 0 },
-                [7] = { mdl = "Z_Base_M_lourd_haut.mdl",     x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.2,   pz = 0 },
-                [8] = { mdl = "Z_Base_M_lourd_dra.mdl",      x = 0,     y = 0,     z = 0,     px = 0,    py = 0.64,  pz = 0 },
-                [9] = { mdl = "Z_Base_M_lourd_haut_dra.mdl", x = 0,     y = 0,     z = 1.860, px = 0,    py = 0.64,  pz = 0 },
-                [10]= { mdl = "Z_Base_M_nacelle_moderne.mdl", x = -0.15, y = -1.35, z = 3.205, px = 0,    py = 0,     pz = 0 }
-            }
-            local current_mast = mast_config[mast_idx] or mast_config[0]
-            local is_nacelle = (string.find(current_mast.mdl, "nacelle") ~= nil)
+            local is_nacelle = (mast_type == 3)
+            
+            -- String Builder for the Mât
+            local base_prefix = "Z_Base_M_"
+            local type_str = ""
+            if mast_type == 0 then type_str = "simple"
+            elseif mast_type == 1 then type_str = "leger"
+            elseif mast_type == 2 then type_str = "lourd"
+            elseif mast_type == 3 then type_str = "nacelle" end
+            
+            local haut_str = (mast_tall and not is_nacelle) and "_haut" or ""
+            local dra_str = (mast_flag and not is_nacelle and mast_type ~= 0) and "_dra" or ""
+            
+            local style_str = ""
+            if mast_style == 1 then
+                if is_nacelle then style_str = mast_black and "_ancienneN" or "_ancienneG"
+                else style_str = mast_black and "_AN" or "_AG" end
+            elseif mast_style == 2 then
+                if not is_nacelle then style_str = mast_black and "_ARN" or "_ARG" end
+            end
+            
+            if mast_style == 0 and is_nacelle then
+                style_str = "_moderne"
+            end
+            
+            local final_mast_mdl = base_prefix .. type_str .. haut_str .. dra_str .. style_str .. ".mdl"
+
+            -- Geometric Offsets
+            local base_z = 1.05
+            local lx = 0
+            local ly = 0
+            local lz = base_z
+            local px = 0
+            local py = 0
+            local pz = 0
+            
+            if is_nacelle then
+                lx = -0.15
+                ly = -1.35
+                lz = base_z + 3.205
+                
+                -- Correction pour la nacelle ancienne : le modèle de plaque a un offset natif de x=0.21, y=-0.05
+                -- alors que l'ancienne nacelle exige 0,0,0. On applique donc l'inverse.
+                if mast_style == 1 then
+                    px = -0.21
+                    py = 0.05
+                end
+            else
+                if mast_tall then lz = base_z + 1.860; pz = 1.860 end
+                if mast_type == 1 then
+                    if mast_flag then py = 0.425 end
+                elseif mast_type == 2 then
+                    if mast_flag then py = 0.64 else py = 0.2 end
+                end
+            end
 
             -- Calcul du shift Y (Inversion de polarité Alsace-Moselle / Gauche-Droite)
             local local_shift_y = 0 
-            local final_mast_mdl = current_mast.mdl
             
             if is_droite then
                 if is_nacelle then
                     local_shift_y = -2.4 
                 else
                     local_shift_y = -4.8 
-                    final_mast_mdl = string.gsub(final_mast_mdl, ".mdl", "_Droite.mdl")
+                    final_mast_mdl = string.gsub(final_mast_mdl, "%.mdl", "_Droite.mdl")
                 end
             end
 
@@ -302,9 +381,7 @@ function data()
             }
 
             -- 3b. Matrice des Cibles/Feux (suit le sommet du mât)
-            local lx = current_mast.x or 0
-            local ly = (current_mast.y or 0) + local_shift_y
-            local lz = base_z + (current_mast.z or 0)
+            ly = ly + local_shift_y
             
             local matrice_feux = {
                 c,  s, 0, 0,
@@ -323,20 +400,17 @@ function data()
             }
 
             -- 3c. Matrice de la Plaque d'identification
-            local px = current_mast.px or 0
-            local py = current_mast.py or 0
             -- Sanctuarisation : Inversion de polarité pour le décalage Y des plaques sur mât drapeau
             if is_droite and not is_nacelle then
                 py = -py
             end
             py = py + local_shift_y
             
-            local pz = base_z + (current_mast.pz or 0)
             local matrice_plaque = {
                 c,  s, 0, 0,
-               -s,  c, 0, 0,
+                -s,  c, 0, 0,
                 0,  0, 1, 0,
-                ox + (px * c - py * s), oy + (px * s + py * c), oz + pz, 1
+                ox + (px * c - py * s), oy + (px * s + py * c), oz + base_z + pz, 1
             }
 
             -- =========================================================================
@@ -346,6 +420,10 @@ function data()
             -- 4a. Mât, Cible et Plaque
             local cible_mdl = (opt_spec == 1) and "Z_Cible_Type_A_SA.mdl" or "Z_Cible_Type_A.mdl"
             local hide_jaune = (opt_spec == 1)
+
+            if hide_jaune then
+                if display == "JAUNE" or display == "JAUNE_CLI" then display = "VERT" end
+            end
 
             local plaque_mdl = ""
             if is_nacelle then
@@ -367,10 +445,20 @@ function data()
                 local f_prefixes = { "", "SNCF_Fleche", "SNCF_Fleche2", "SNCF_Fleche3", "SNCF_FlecheV" }
                 local f_prefix = f_prefixes[fleche_type + 1]
                 local f_pos = is_droite and "_dg" or "_gd"
-                local f_mast_map = {
-                    [0]="_s",[1]="_sh",[2]="_l",[3]="_lh",[4]="_l",[5]="_lh",[6]="_lo",[7]="_loh",[8]="_loD",[9]="_lohD"
-                }
-                local f_mast = f_mast_map[mast_idx]
+                
+                local f_mast = nil
+                if mast_type == 0 then
+                    f_mast = mast_tall and "_sh" or "_s"
+                elseif mast_type == 1 then
+                    f_mast = mast_tall and "_lh" or "_l"
+                elseif mast_type == 2 then
+                    if mast_flag then
+                        f_mast = mast_tall and "_lohD" or "_loD"
+                    else
+                        f_mast = mast_tall and "_loh" or "_lo"
+                    end
+                end
+                
                 if f_mast then
                     table.insert(result.models, { 
                         id = "SNCF_Asset_Model/" .. f_prefix .. f_pos .. f_mast .. ".mdl", 
